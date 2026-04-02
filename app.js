@@ -1,0 +1,746 @@
+// State
+let currentUser = null;
+let cart = [];
+
+// DOM Elements
+const loginView = document.getElementById('login-view');
+const appView = document.getElementById('app-view');
+const loginForm = document.getElementById('login-form');
+const logoutBtn = document.getElementById('btn-logout');
+
+// Initial load check
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+    setupNavigation();
+    setupModals();
+    setupForms();
+});
+
+function checkAuth() {
+    const savedUser = sessionStorage.getItem('currentUser');
+    if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        showApp();
+    } else {
+        showLogin();
+    }
+}
+
+function showLogin() {
+    loginView.style.display = 'flex';
+    appView.style.display = 'none';
+}
+
+function showApp() {
+    loginView.style.display = 'none';
+    appView.style.display = 'flex';
+    document.getElementById('current-user-name').innerText = currentUser.username;
+    
+    // Check role, hide users tab if not admin
+    if (currentUser.role !== 'Admin') {
+        document.getElementById('nav-users').style.display = 'none';
+        if(document.getElementById('backup-panel')) document.getElementById('backup-panel').style.display = 'none';
+    } else {
+        document.getElementById('nav-users').style.display = 'flex';
+        if(document.getElementById('backup-panel')) document.getElementById('backup-panel').style.display = 'block';
+    }
+    
+    // Load default view (dashboard)
+    loadView('dashboard');
+}
+
+// Authentication
+if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const user = document.getElementById('login-username').value;
+        const pass = document.getElementById('login-password').value;
+        
+        const validUser = DB.UserDB.login(user, pass);
+        if (validUser) {
+            currentUser = validUser;
+            sessionStorage.setItem('currentUser', JSON.stringify(validUser));
+            document.getElementById('login-error').style.display = 'none';
+            document.getElementById('login-password').value = '';
+            showApp();
+        } else {
+            const err = document.getElementById('login-error');
+            err.innerText = "Credenciales incorrectas";
+            err.style.display = 'block';
+        }
+    });
+}
+
+if(logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+        currentUser = null;
+        sessionStorage.removeItem('currentUser');
+        showLogin();
+    });
+}
+
+// Navigation
+function setupNavigation() {
+    document.querySelectorAll('.nav-item').forEach(el => {
+        el.addEventListener('click', (e) => {
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            const target = e.currentTarget;
+            target.classList.add('active');
+            loadView(target.dataset.target);
+            
+            // Close mobile sidebar if open
+            if(window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('open');
+            }
+        });
+    });
+    
+    // Mobile Hamburger button
+    const mobileBtn = document.getElementById('mobile-menu-btn');
+    if(mobileBtn) {
+        mobileBtn.addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('open');
+        });
+    }
+}
+
+function loadView(viewName) {
+    document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
+    document.getElementById(`view-${viewName}`).classList.add('active');
+    
+    const titleObj = document.getElementById('page-title');
+    if(titleObj) {
+        titleObj.innerText = viewName === 'dashboard' ? 'Panel de Inicio' :
+            viewName === 'inventory' ? 'Inventario' :
+            viewName === 'sales' ? 'Punto de Venta' : 
+            viewName === 'clients' ? 'Clientes' : 'Usuarios';
+    }
+        
+    switch(viewName) {
+        case 'dashboard': renderDashboard(); break;
+        case 'inventory': renderInventory(); break;
+        case 'sales': renderSales(); break;
+        case 'clients': renderClients(); break;
+        case 'users': 
+            if(currentUser.role === 'Admin') renderUsers(); 
+            break;
+    }
+}
+
+// Modals
+function setupModals() {
+    const btnAddItem = document.getElementById('btn-add-item');
+    if(btnAddItem) {
+        btnAddItem.addEventListener('click', () => {
+            document.getElementById('item-form').reset();
+            document.getElementById('item-id').value = '';
+            document.getElementById('modal-item-title').innerText = 'Nuevo Artículo';
+            document.getElementById('modal-item-form').classList.add('active');
+        });
+    }
+    
+    const btnAddUser = document.getElementById('btn-add-user');
+    if(btnAddUser) {
+        btnAddUser.addEventListener('click', () => {
+            document.getElementById('user-form').reset();
+            document.getElementById('modal-user-form').classList.add('active');
+        });
+    }
+
+    const btnAddClient = document.getElementById('btn-add-client');
+    if(btnAddClient) {
+        btnAddClient.addEventListener('click', () => {
+            document.getElementById('client-form').reset();
+            document.getElementById('client-id').value = '';
+            document.getElementById('modal-client-form').classList.add('active');
+        });
+    }
+}
+
+window.closeModal = function(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+}
+
+// Forms & Logic
+function setupForms() {
+    // Inventory Form
+    const itemForm = document.getElementById('item-form');
+    if(itemForm) {
+        itemForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('item-id').value;
+            const item = {
+                name: document.getElementById('item-name').value,
+                description: document.getElementById('item-desc').value,
+                cost_price: parseFloat(document.getElementById('item-cost-price').value),
+                price: parseFloat(document.getElementById('item-price').value),
+                quantity: parseInt(document.getElementById('item-qty').value, 10)
+            };
+            
+            if (id) {
+                DB.InventoryDB.update(id, item);
+            } else {
+                DB.InventoryDB.add(item);
+            }
+            closeModal('modal-item-form');
+            renderInventory();
+        });
+    }
+    
+    // User Form
+    const userForm = document.getElementById('user-form');
+    if(userForm) {
+        userForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            try {
+                DB.UserDB.add({
+                    username: document.getElementById('user-username').value,
+                    password: document.getElementById('user-password').value,
+                    role: document.getElementById('user-role').value
+                });
+                closeModal('modal-user-form');
+                renderUsers();
+            } catch (err) {
+                alert(err.message);
+            }
+        });
+    }
+
+    // Client Form
+    const clientForm = document.getElementById('client-form');
+    if(clientForm) {
+        clientForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('client-id').value;
+            const newPlan = document.getElementById('client-plan').value;
+            
+            let paymentDate = new Date().toISOString();
+            if(id) {
+                const oldClient = DB.ClientsDB.getById(id);
+                // Si el plan no cambia, mantemos la fecha original. 
+                // Si hace upgrade/downgrade, la fecha se reinicia a hoy.
+                if(oldClient && oldClient.plan_type === newPlan) {
+                    paymentDate = oldClient.payment_date;
+                }
+            }
+            
+            const client = {
+                name: document.getElementById('client-name').value,
+                surname: document.getElementById('client-surname').value,
+                age: parseInt(document.getElementById('client-age').value, 10),
+                weight: parseFloat(document.getElementById('client-weight').value),
+                address: document.getElementById('client-address').value,
+                phone: document.getElementById('client-phone').value,
+                plan_type: newPlan,
+                payment_date: paymentDate
+            };
+            
+            if (id) {
+                DB.ClientsDB.update(id, client);
+            } else {
+                DB.ClientsDB.add(client);
+            }
+            closeModal('modal-client-form');
+            renderClients();
+        });
+    }
+    
+    // Stock Form
+    const stockForm = document.getElementById('stock-form');
+    if(stockForm) {
+        stockForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('stock-item-id').value;
+            const type = document.getElementById('stock-action').value;
+            let amount = parseInt(document.getElementById('stock-amount').value, 10);
+            
+            if (type === 'OUT') amount = -amount;
+            
+            try {
+                DB.InventoryDB.adjustStock(id, amount, currentUser.id, type);
+                closeModal('modal-stock-form');
+                renderInventory();
+            } catch(err) {
+                alert(err.message);
+            }
+        });
+    }
+
+    // POS Cart Events
+    const btnAddToCart = document.getElementById('btn-add-to-cart');
+    if (btnAddToCart) {
+        btnAddToCart.addEventListener('click', () => {
+            const itemId = document.getElementById('sale-item-select').value;
+            const qty = parseInt(document.getElementById('sale-item-qty').value, 10);
+            if(!itemId || qty < 1) return;
+            
+            const item = DB.InventoryDB.getById(itemId);
+            if(!item) return;
+            
+            if(item.quantity < qty) {
+                alert("Stock insuficiente para añadir al carrito.");
+                return;
+            }
+            
+            const existing = cart.find(c => c.id === itemId);
+            if(existing) {
+                if (item.quantity < existing.qty + qty) {
+                    alert("Stock insuficiente para añadir más de este artículo.");
+                    return;
+                }
+                existing.qty += qty;
+                existing.subtotal = existing.qty * existing.price;
+            } else {
+                cart.push({
+                    id: itemId,
+                    name: item.name,
+                    price: item.price,
+                    qty: qty,
+                    subtotal: item.price * qty
+                });
+            }
+            
+            document.getElementById('sale-item-qty').value = 1;
+            renderCart();
+        });
+    }
+    
+    const btnProcess = document.getElementById('btn-process-sale');
+    if (btnProcess) {
+        btnProcess.addEventListener('click', () => {
+            if(cart.length === 0) {
+                alert("El carrito está vacío");
+                return;
+            }
+            try {
+                DB.SalesDB.processSale(currentUser.id, cart);
+                alert("Venta procesada con éxito");
+                cart = [];
+                renderCart();
+                document.getElementById('btn-print-invoice').disabled = false;
+                renderSalesHistory();
+                
+                // Reload select just in case some stock went 0
+                populateSalesSelect();
+            } catch (error) {
+                alert("Error al procesar: " + error.message);
+            }
+        });
+    }
+    
+    const btnPrint = document.getElementById('btn-print-invoice');
+    if(btnPrint) {
+        btnPrint.addEventListener('click', () => {
+            window.print();
+        });
+    }
+}
+
+// Rendering Dashboards & Views
+function renderDashboard() {
+    const inv = DB.InventoryDB.getAll();
+    const sales = DB.SalesDB.getAll();
+    const txs = DB.TransactionsDB.getAll();
+    
+    const sumQty = inv.reduce((sum, item) => sum + parseInt(item.quantity), 0);
+    document.getElementById('stat-total-items').innerText = sumQty;
+    
+    const totalSalesValue = sales.reduce((sum, sale) => sum + parseFloat(sale.total_amount), 0);
+    document.getElementById('stat-total-sales').innerText = `$${totalSalesValue.toFixed(2)}`;
+    
+    // Calculate total profit
+    const totalProfitValue = sales.reduce((sum, sale) => sum + parseFloat(sale.profit || 0), 0);
+    if(document.getElementById('stat-total-profit')) {
+        document.getElementById('stat-total-profit').innerText = `$${totalProfitValue.toFixed(2)}`;
+    }
+    
+    // Product Individual Stock Cards
+    const productGrid = document.getElementById('product-stock-cards');
+    if (productGrid) {
+        productGrid.innerHTML = '';
+        inv.forEach(item => {
+            const stockColor = item.quantity <= 5 ? 'var(--danger-color)' : 'var(--accent-color)';
+            productGrid.innerHTML += `
+                <div class="glass-panel" style="padding: 1rem; text-align: center; border-left: 4px solid ${stockColor};">
+                    <h4 style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.5rem; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" title="${item.name}">${item.name}</h4>
+                    <div style="font-size: 2rem; font-weight: bold; color: ${stockColor};">${item.quantity}</div>
+                </div>
+            `;
+        });
+    }
+    
+    // Product Report
+    const reportTbody = document.querySelector('#product-report-table tbody');
+    if (reportTbody) {
+        reportTbody.innerHTML = '';
+        
+        let productProfits = {};
+        sales.forEach(s => {
+            s.items.forEach(i => {
+                if(!productProfits[i.id]) productProfits[i.id] = 0;
+                const currentCost = DB.InventoryDB.getById(i.id)?.cost_price || 0;
+                const profitForItem = i.subtotal - (currentCost * i.qty);
+                productProfits[i.id] += profitForItem;
+            });
+        });
+        
+        inv.forEach(item => {
+            const prof = productProfits[item.id] || 0;
+            reportTbody.innerHTML += `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>${item.quantity}</td>
+                    <td style="color: var(--success-color); font-weight: bold;">$${prof.toFixed(2)}</td>
+                </tr>
+            `;
+        });
+    }
+
+    const tbody = document.querySelector('#recent-transactions-table tbody');
+    if (tbody) {
+        tbody.innerHTML = '';
+        // show last 5
+        txs.slice(-5).reverse().forEach(tx => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${new Date(tx.date).toLocaleString()}</td>
+                    <td>${tx.item_name}</td>
+                    <td><span style="color: ${tx.type==='IN'?'var(--success-color)': (tx.type === 'SALE' ? 'var(--accent-color)' : 'var(--danger-color)')}">${tx.type}</span></td>
+                    <td>${tx.quantity}</td>
+                </tr>
+            `;
+        });
+    }
+}
+
+function renderInventory() {
+    const inv = DB.InventoryDB.getAll();
+    const tbody = document.querySelector('#inventory-table tbody');
+    if(!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if(inv.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay artículos. Añade uno.</td></tr>';
+        return;
+    }
+    
+    inv.forEach(item => {
+        tbody.innerHTML += `
+            <tr>
+                <td>${item.id.substring(0,6)}</td>
+                <td>${item.name}</td>
+                <td>${item.description || '-'}</td>
+                <td>$${parseFloat(item.cost_price || 0).toFixed(2)}</td>
+                <td>$${parseFloat(item.price).toFixed(2)}</td>
+                <td style="color: ${item.quantity <= 5 ? 'var(--danger-color)' : 'inherit'}; font-weight: ${item.quantity <= 5 ? 'bold' : 'normal'}">${item.quantity}</td>
+                <td class="action-btns">
+                    <button class="btn-icon" onclick="editItem('${item.id}')" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="btn-icon" onclick="adjustStockForm('${item.id}')" title="Ajustar Stock"><i class="fas fa-exchange-alt"></i></button>
+                    ${currentUser.role === 'Admin' ? `<button class="btn-icon" style="color: var(--danger-color)" onclick="deleteItem('${item.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function renderSales() {
+    populateSalesSelect();
+    renderCart();
+    renderSalesHistory();
+}
+
+function populateSalesSelect() {
+    const select = document.getElementById('sale-item-select');
+    if(!select) return;
+    select.innerHTML = '<option value="">Seleccione un artículo...</option>';
+    DB.InventoryDB.getAll().forEach(i => {
+        if(i.quantity > 0) {
+            select.innerHTML += `<option value="${i.id}">${i.name} ($${parseFloat(i.price).toFixed(2)} - Stock: ${i.quantity})</option>`;
+        }
+    });
+}
+
+function renderCart() {
+    const tbody = document.querySelector('#cart-table tbody');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    let total = 0;
+    
+    if(cart.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">El carrito está vacío</td></tr>';
+    } else {
+        cart.forEach((c, index) => {
+            total += c.subtotal;
+            tbody.innerHTML += `
+                <tr>
+                    <td>${c.name}</td>
+                    <td>${c.qty}</td>
+                    <td>$${parseFloat(c.price).toFixed(2)}</td>
+                    <td>$${c.subtotal.toFixed(2)}</td>
+                    <td><button class="btn-icon" style="color: var(--danger-color)" onclick="removeFromCart(${index})"><i class="fas fa-times"></i></button></td>
+                </tr>
+            `;
+        });
+    }
+    
+    document.getElementById('cart-subtotal').innerText = `$${total.toFixed(2)}`;
+    document.getElementById('cart-total').innerText = `$${total.toFixed(2)}`;
+}
+
+function renderSalesHistory() {
+    const sales = DB.SalesDB.getAll();
+    const tbody = document.querySelector('#sales-history-table tbody');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    
+    sales.slice(-10).reverse().forEach(s => {
+        tbody.innerHTML += `
+            <tr>
+                <td>${new Date(s.date).toLocaleString()}</td>
+                <td>${s.id}</td>
+                <td>$${parseFloat(s.total_amount).toFixed(2)}</td>
+            </tr>
+        `;
+    });
+}
+
+function renderUsers() {
+    const users = DB.UserDB.getAll();
+    const tbody = document.querySelector('#users-table tbody');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    
+    users.forEach(u => {
+        tbody.innerHTML += `
+            <tr>
+                <td>${u.username}</td>
+                <td>${u.role}</td>
+                <td class="action-btns">
+                    ${u.username !== 'admin' ? `<button class="btn-icon" style="color: var(--danger-color)" onclick="deleteUser('${u.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : '-'}
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function renderClients() {
+    const clients = DB.ClientsDB.getAll();
+    const now = new Date();
+    
+    let mensual = 0, diario = 0, personal = 0, expired = 0;
+    
+    clients.forEach(c => {
+        if(c.plan_type === 'Mensual') mensual++;
+        if(c.plan_type === 'Diario') diario++;
+        if(c.plan_type === 'Personalizado') personal++;
+        
+        // Verifica si está vencido (solo mensual o personalizado, asumiendo 30 días)
+        if(c.plan_type === 'Mensual' || c.plan_type === 'Personalizado') {
+            const payDate = new Date(c.payment_date);
+            const daysDiff = (now - payDate) / (1000 * 60 * 60 * 24);
+            if(daysDiff >= 30) expired++;
+        }
+    });
+    
+    document.getElementById('stat-cat-mensual').innerText = mensual;
+    document.getElementById('stat-cat-diario').innerText = diario;
+    document.getElementById('stat-cat-personal').innerText = personal;
+    document.getElementById('stat-expired-clients').innerText = expired;
+}
+
+window.showClientsCategory = function(category) {
+    const clients = DB.ClientsDB.getAll();
+    const tbody = document.querySelector('#clients-table tbody');
+    const container = document.getElementById('clients-list-container');
+    const title = document.getElementById('client-category-title');
+    
+    if(!tbody || !container) return;
+    
+    tbody.innerHTML = '';
+    title.innerText = `Visualizando: ${category}`;
+    
+    const now = new Date();
+    let filtered = [];
+    
+    if (category === 'Vencidos') {
+        filtered = clients.filter(c => {
+            if(c.plan_type === 'Mensual' || c.plan_type === 'Personalizado') {
+                const payDate = new Date(c.payment_date);
+                return (now - payDate) / (1000 * 60 * 60 * 24) >= 30;
+            }
+            return false;
+        });
+    } else {
+        filtered = clients.filter(c => c.plan_type === category);
+    }
+    
+    if(filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay clientes en esta categoría.</td></tr>';
+    } else {
+        filtered.forEach(c => {
+            let isExpired = false;
+            if(c.plan_type === 'Mensual' || c.plan_type === 'Personalizado') {
+                const payDate = new Date(c.payment_date);
+                isExpired = (now - payDate) / (1000 * 60 * 60 * 24) >= 30;
+            }
+            
+            const pdate = new Date(c.payment_date).toLocaleDateString();
+            const expBadge = isExpired ? '<span style="color: white; background: var(--danger-color); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-left: 5px;">Vencido</span>' : '';
+            
+            tbody.innerHTML += `
+                <tr style="${isExpired && category !== 'Vencidos' ? 'background: rgba(239, 68, 68, 0.05);' : ''}">
+                    <td><strong>${c.name} ${c.surname}</strong></td>
+                    <td>${c.age} años / ${c.weight} kg</td>
+                    <td>${c.address} <br> <small style="color:var(--text-secondary)"><i class="fas fa-phone"></i> ${c.phone}</small></td>
+                    <td>${c.plan_type}</td>
+                    <td>${pdate} ${expBadge}</td>
+                    <td class="action-btns">
+                        <button class="btn-icon" onclick="editClient('${c.id}')" title="Editar"><i class="fas fa-edit"></i></button>
+                        ${currentUser.role === 'Admin' ? `<button class="btn-icon" style="color: var(--danger-color)" onclick="deleteClient('${c.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    
+    container.style.display = 'block';
+}
+
+// Global actions for onclick
+window.editItem = function(id) {
+    const item = DB.InventoryDB.getById(id);
+    if(!item) return;
+    
+    document.getElementById('item-id').value = item.id;
+    document.getElementById('item-name').value = item.name;
+    document.getElementById('item-desc').value = item.description;
+    document.getElementById('item-cost-price').value = item.cost_price || 0;
+    document.getElementById('item-price').value = item.price;
+    document.getElementById('item-qty').value = item.quantity;
+    
+    document.getElementById('modal-item-title').innerText = 'Editar Artículo';
+    document.getElementById('modal-item-form').classList.add('active');
+}
+
+window.adjustStockForm = function(id) {
+    const item = DB.InventoryDB.getById(id);
+    if(!item) return;
+    
+    document.getElementById('stock-item-id').value = item.id;
+    document.getElementById('stock-item-name').innerText = item.name;
+    document.getElementById('stock-current').innerText = item.quantity;
+    document.getElementById('stock-amount').value = '';
+    
+    document.getElementById('modal-stock-form').classList.add('active');
+}
+
+window.deleteItem = function(id) {
+    if(confirm('¿Seguro que desea eliminar este artículo?')) {
+        DB.InventoryDB.remove(id);
+        renderInventory();
+    }
+}
+
+window.deleteUser = function(id) {
+    if(confirm('¿Seguro que desea eliminar este usuario?')) {
+        DB.UserDB.remove(id);
+        renderUsers();
+    }
+}
+
+window.editClient = function(id) {
+    const client = DB.ClientsDB.getById(id);
+    if(!client) return;
+    
+    document.getElementById('client-id').value = client.id;
+    document.getElementById('client-name').value = client.name;
+    document.getElementById('client-surname').value = client.surname;
+    document.getElementById('client-age').value = client.age;
+    document.getElementById('client-weight').value = client.weight;
+    document.getElementById('client-address').value = client.address;
+    document.getElementById('client-phone').value = client.phone;
+    document.getElementById('client-plan').value = client.plan_type;
+    
+    document.getElementById('modal-client-form').classList.add('active');
+}
+
+window.deleteClient = function(id) {
+    if(confirm('¿Seguro que desea eliminar este cliente?')) {
+        DB.ClientsDB.remove(id);
+        renderClients();
+        document.getElementById('clients-list-container').style.display='none';
+    }
+}
+
+window.removeFromCart = function(index) {
+    cart.splice(index, 1);
+    renderCart();
+}
+
+// Data Export & Import
+const btnExport = document.getElementById('btn-export-data');
+if(btnExport) {
+    btnExport.addEventListener('click', () => {
+        const data = {
+            users: localStorage.getItem('gym_users'),
+            inventory: localStorage.getItem('gym_inventory'),
+            transactions: localStorage.getItem('gym_transactions'),
+            sales: localStorage.getItem('gym_sales'),
+            clients: localStorage.getItem('gym_clients')
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const dateStr = new Date().toISOString().split('T')[0];
+        a.download = `respaldo_gimnasio_${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+}
+
+const fileImport = document.getElementById('import-data-file');
+if(fileImport) {
+    fileImport.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        
+        if(!confirm('¿Estás seguro de que deseas importar estos datos? ADVERTENCIA: Se borrarán todos los datos actuales del sistema y se reemplazarán por los del archivo.')) {
+            e.target.value = ''; // reset hidden input
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const importedData = JSON.parse(event.target.result);
+                // Ensure it looks like a valid backup by checking for users
+                if(importedData.users) {
+                    const processArray = (arrStr, collName) => {
+                        const arr = typeof arrStr === 'string' ? JSON.parse(arrStr) : arrStr;
+                        if(Array.isArray(arr)) {
+                            arr.forEach(obj => firebase.firestore().collection(collName).doc(obj.id).set(obj));
+                        }
+                    };
+                    
+                    processArray(importedData.users, 'gym_users');
+                    processArray(importedData.inventory, 'gym_inventory');
+                    processArray(importedData.transactions, 'gym_transactions');
+                    processArray(importedData.sales, 'gym_sales');
+                    processArray(importedData.clients, 'gym_clients');
+                    
+                    alert('Datos importados a la Nube correctamente. Podría tomar unos segundos en aparecer.');
+                    window.location.reload();
+                } else {
+                    alert('El archivo no parece ser un respaldo válido del programa.');
+                }
+            } catch(error) {
+                alert('Hubo un error al leer el archivo. Verifica que sea el .json correcto.');
+            }
+        };
+        reader.readAsText(file);
+    });
+}

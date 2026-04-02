@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Inventory Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Firebase SDK (Compat Version for simplicity in pure HTML/JS) -->
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+    <!-- Login View -->
+    <div id="login-view">
+        <div class="glass-panel login-card">
+            <i class="fas fa-dumbbell"></i>
+            <h2>GymInventory Pro</h2>
+            <p>Inicia sesión para acceder</p>
+            <form id="login-form">
+                <input type="text" id="login-username" placeholder="Usuario" required>
+                <input type="password" id="login-password" placeholder="Contraseña" required>
+                <div id="login-error" style="color: var(--danger-color); margin-bottom: 1rem; display: none;"></div>
+                <button type="submit" class="btn-primary" style="width: 100%;">
+                    <i class="fas fa-sign-in-alt"></i> Entrar
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <button id="mobile-menu-btn" class="btn-primary" style="position:fixed; top:1rem; left:1rem; z-index:100; display:none; padding: 0.5rem 1rem;">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- App Shell View -->
+    <div id="app-view">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-dumbbell"></i>
+                <h2>GymPro</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a class="nav-item active" data-target="dashboard">
+                    <i class="fas fa-home"></i> Inicio
+                </a>
+                <a class="nav-item" data-target="inventory">
+                    <i class="fas fa-boxes"></i> Inventario
+                </a>
+                <a class="nav-item" data-target="sales">
+                    <i class="fas fa-shopping-cart"></i> Ventas
+                </a>
+                <a class="nav-item" data-target="clients">
+                    <i class="fas fa-address-book"></i> Clientes
+                </a>
+                <a class="nav-item" data-target="users" id="nav-users" style="display: none;">
+                    <i class="fas fa-users"></i> Usuarios
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="btn-logout" class="btn-danger" style="width: 100%;">
+                    <i class="fas fa-sign-out-alt"></i> Salir
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="glass-panel top-bar">
+                <h2 id="page-title">Panel de Inicio</h2>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span id="current-user-name">Admin</span>
+                    <div style="width: 40px; height: 40px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                        A
+                    </div>
+                </div>
+            </div>
+
+            <!-- Views Container -->
+            <div id="views-container">
+                <!-- Dashboard View -->
+                <section id="view-dashboard" class="view-section active">
+                    <div class="stats-grid">
+                        <div class="glass-panel stat-card">
+                            <div class="stat-icon"><i class="fas fa-box"></i></div>
+                            <div class="stat-info">
+                                <h3 id="stat-total-items">0</h3>
+                                <span>Artículos en Stock</span>
+                            </div>
+                        </div>
+                        <div class="glass-panel stat-card">
+                            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--success-color);"><i class="fas fa-chart-line"></i></div>
+                            <div class="stat-info">
+                                <h3 id="stat-total-sales">$0.00</h3>
+                                <span>Ventas Totales</span>
+                            </div>
+                        </div>
+                        <div class="glass-panel stat-card">
+                            <div class="stat-icon" style="background: rgba(59, 130, 246, 0.2); color: var(--primary-color);"><i class="fas fa-piggy-bank"></i></div>
+                            <div class="stat-info">
+                                <h3 id="stat-total-profit">$0.00</h3>
+                                <span>Ganancias Totales</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Data Backup (Admin only) -->
+                    <div class="glass-panel" id="backup-panel" style="padding: 1.5rem; margin-bottom: 1.5rem; display: none;">
+                        <h3>Gestión de Datos y Respaldos</h3>
+                        <p style="margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Debido a que hemos migrado a la nube, los datos ya están seguros y respaldados por Google Firebase de manera automática.</p>
+                    </div>
+
+                    <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                        <h3>Stock Individual por Producto</h3>
+                        <div class="stats-grid" id="product-stock-cards" style="gap: 1rem;">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    
+                    <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                        <h3>Reporte por Producto</h3>
+                        <div class="table-container">
+                            <table id="product-report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Stock Disponible</th>
+                                        <th>Ganancia Generada</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-panel" style="padding: 1.5rem;">
+                        <h3>Movimientos Recientes</h3>
+                        <div class="table-container">
+                            <table id="recent-transactions-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Artículo</th>
+                                        <th>Tipo</th>
+                                        <th>Cantidad</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Inventory View -->
+                <section id="view-inventory" class="view-section">
+                    <div class="glass-panel" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h3>Gestión de Inventario</h3>
+                            <button id="btn-add-item" class="btn-primary"><i class="fas fa-plus"></i> Nuevo Artículo</button>
+                        </div>
+                        <div class="table-container">
+                            <table id="inventory-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nombre</th>
+                                        <th>Descripción</th>
+                                        <th>Costo</th>
+                                        <th>Precio Venta</th>
+                                        <th>Stock</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Sales View -->
+                <section id="view-sales" class="view-section">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+                        <div class="glass-panel" style="padding: 1.5rem;">
+                            <h3>Realizar Venta</h3>
+                            <div class="flex-row">
+                                <select id="sale-item-select">
+                                    <option value="">Seleccione un artículo...</option>
+                                    <!-- Populated by JS -->
+                                </select>
+                                <input type="number" id="sale-item-qty" placeholder="Cantidad" min="1" value="1" style="max-width: 100px;">
+                                <button id="btn-add-to-cart" class="btn-primary">Añadir</button>
+                            </div>
+                            <div class="table-container mt-4">
+                                <table id="cart-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Artículo</th>
+                                            <th>Cant.</th>
+                                            <th>Precio Unit.</th>
+                                            <th>Subtotal</th>
+                                            <th>Quitar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="glass-panel" style="padding: 1.5rem;">
+                            <h3>Resumen (Factura)</h3>
+                            <div id="invoice-details" style="margin: 1.5rem 0; border-bottom: 1px dashed var(--border-color); padding-bottom: 1rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span>Subtotal:</span>
+                                    <span id="cart-subtotal">$0.00</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.25rem; color: var(--success-color); margin-top: 1rem;">
+                                    <span>Total:</span>
+                                    <span id="cart-total">$0.00</span>
+                                </div>
+                            </div>
+                            <button id="btn-process-sale" class="btn-success" style="width: 100%; margin-bottom: 1rem;"><i class="fas fa-check-circle"></i> Procesar Venta</button>
+                            <button id="btn-print-invoice" class="btn-primary" style="width: 100%; background: var(--card-bg); border: 1px solid var(--border-color);" disabled><i class="fas fa-print"></i> Imprimir Factura</button>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-panel" style="padding: 1.5rem; margin-top: 1.5rem;" id="print-area">
+                        <h3>Historial de Ventas</h3>
+                        <div class="table-container">
+                            <table id="sales-history-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>ID Venta</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Clients View -->
+                <section id="view-clients" class="view-section">
+                    <div class="glass-panel" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h3>Gestión de Clientes</h3>
+                            <button id="btn-add-client" class="btn-primary"><i class="fas fa-plus"></i> Nuevo Cliente</button>
+                        </div>
+                        
+                        <!-- Categorías -->
+                        <div class="stats-grid" style="margin-bottom: 2rem;">
+                            <div class="glass-panel stat-card client-cat-card" onclick="showClientsCategory('Mensual')" style="cursor: pointer;">
+                                <div class="stat-icon" style="background: rgba(59, 130, 246, 0.2); color: var(--primary-color);"><i class="fas fa-calendar-alt"></i></div>
+                                <div class="stat-info">
+                                    <h3 id="stat-cat-mensual">0</h3>
+                                    <span>Mensual</span>
+                                </div>
+                            </div>
+                            <div class="glass-panel stat-card client-cat-card" onclick="showClientsCategory('Diario')" style="cursor: pointer;">
+                                <div class="stat-icon" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;"><i class="fas fa-sun"></i></div>
+                                <div class="stat-info">
+                                    <h3 id="stat-cat-diario">0</h3>
+                                    <span>Diario</span>
+                                </div>
+                            </div>
+                            <div class="glass-panel stat-card client-cat-card" onclick="showClientsCategory('Personalizado')" style="cursor: pointer;">
+                                <div class="stat-icon" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;"><i class="fas fa-dumbbell"></i></div>
+                                <div class="stat-info">
+                                    <h3 id="stat-cat-personal">0</h3>
+                                    <span>Personal</span>
+                                </div>
+                            </div>
+                            <div class="glass-panel stat-card client-cat-card" onclick="showClientsCategory('Vencidos')" style="cursor: pointer;">
+                                <div class="stat-icon" style="background: rgba(239, 68, 68, 0.2); color: var(--danger-color);"><i class="fas fa-exclamation-triangle"></i></div>
+                                <div class="stat-info">
+                                    <h3 id="stat-expired-clients">0</h3>
+                                    <span>Vencidos</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lista de Clientes -->
+                        <div id="clients-list-container" style="display: none;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h4 id="client-category-title" style="color: var(--primary-color); margin:0;">Categoría</h4>
+                                <button class="btn-icon" onclick="document.getElementById('clients-list-container').style.display='none'" title="Cerrar Lista"><i class="fas fa-times"></i> Cerrar</button>
+                            </div>
+                            <div class="table-container">
+                                <table id="clients-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre Completo</th>
+                                            <th>Datos Físicos</th>
+                                            <th>Contacto</th>
+                                            <th>Plan</th>
+                                            <th>Pago</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- Users View -->
+                <section id="view-users" class="view-section">
+                    <div class="glass-panel" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h3>Gestión de Usuarios</h3>
+                            <button id="btn-add-user" class="btn-primary"><i class="fas fa-user-plus"></i> Nuevo Usuario</button>
+                        </div>
+                        <div class="table-container">
+                            <table id="users-table">
+                                <thead>
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Rol</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Item Form Modal -->
+    <div class="modal-overlay" id="modal-item-form">
+        <div class="glass-panel modal-content">
+            <div class="modal-header">
+                <h3 id="modal-item-title">Nuevo Artículo</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-item-form')"></i>
+            </div>
+            <form id="item-form">
+                <input type="hidden" id="item-id">
+                <input type="text" id="item-name" placeholder="Nombre del producto" required>
+                <textarea id="item-desc" placeholder="Descripción" rows="2"></textarea>
+                <div class="flex-row">
+                    <input type="number" id="item-cost-price" placeholder="Costo ($)" step="0.01" required>
+                    <input type="number" id="item-price" placeholder="Precio Venta ($)" step="0.01" required>
+                </div>
+                <div class="flex-row" style="margin-top: 1rem;">
+                    <input type="number" id="item-qty" placeholder="Cantidad Inicial" required style="width: 100%;">
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-item-form')">Cancelar</button>
+                    <button type="submit" class="btn-success" style="flex:1;">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Client Form Modal -->
+    <div class="modal-overlay" id="modal-client-form">
+        <div class="glass-panel modal-content">
+            <div class="modal-header">
+                <h3>Nuevo Cliente</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-client-form')"></i>
+            </div>
+            <form id="client-form">
+                <input type="hidden" id="client-id">
+                <div class="flex-row">
+                    <input type="text" id="client-name" placeholder="Nombre" required>
+                    <input type="text" id="client-surname" placeholder="Apellido" required>
+                </div>
+                <div class="flex-row" style="margin-top:1rem;">
+                    <input type="number" id="client-age" placeholder="Edad" min="10" required>
+                    <input type="number" id="client-weight" placeholder="Peso (kg)" step="0.1" required>
+                </div>
+                <div class="flex-row" style="margin-top:1rem;">
+                    <input type="text" id="client-address" placeholder="Dirección" required>
+                    <input type="tel" id="client-phone" placeholder="Teléfono" required>
+                </div>
+                <select id="client-plan" style="margin-top:1rem;" required>
+                    <option value="" disabled selected>Seleccione el tipo de plan...</option>
+                    <option value="Mensual">Membresía Mensual</option>
+                    <option value="Diario">Membresía Básica Pago Diario</option>
+                    <option value="Personalizado">Entrenamiento Personalizado</option>
+                </select>
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-client-form')">Cancelar</button>
+                    <button type="submit" class="btn-success" style="flex:1;">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- User Form Modal -->
+    <div class="modal-overlay" id="modal-user-form">
+        <div class="glass-panel modal-content">
+            <div class="modal-header">
+                <h3>Nuevo Usuario</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-user-form')"></i>
+            </div>
+            <form id="user-form">
+                <input type="text" id="user-username" placeholder="Nombre de usuario" required>
+                <input type="password" id="user-password" placeholder="Contraseña" required>
+                <select id="user-role" required>
+                    <option value="Staff">Staff (Solo ventas y ver inventario)</option>
+                    <option value="Admin">Administrador (Acceso total)</option>
+                </select>
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-user-form')">Cancelar</button>
+                    <button type="submit" class="btn-success" style="flex:1;">Crear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Stock Adjust Modal -->
+    <div class="modal-overlay" id="modal-stock-form">
+        <div class="glass-panel modal-content">
+            <div class="modal-header">
+                <h3>Ajustar Stock (<span id="stock-item-name"></span>)</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-stock-form')"></i>
+            </div>
+            <form id="stock-form">
+                <input type="hidden" id="stock-item-id">
+                <p>Stock Actual: <strong id="stock-current">0</strong></p>
+                <div class="flex-row" style="margin-top: 1rem;">
+                    <select id="stock-action" required>
+                        <option value="IN">Entrada (Sumar)</option>
+                        <option value="OUT">Salida (Restar)</option>
+                    </select>
+                    <input type="number" id="stock-amount" placeholder="Cantidad" min="1" required>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-stock-form')">Cancelar</button>
+                    <button type="submit" class="btn-success" style="flex:1;">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/db.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
