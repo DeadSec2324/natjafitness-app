@@ -165,6 +165,14 @@ function closeModal(id) {
     document.getElementById(id).classList.remove('active');
 }
 
+window.triggerDeviceNotification = function(title, body) {
+    if (currentUser && currentUser.role === 'Admin') {
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(title, { body: body });
+        }
+    }
+};
+
 window.editUser = function(id) {
     const user = DB.UserDB.getAll().find(u => u.id === id);
     if(user) {
@@ -577,6 +585,15 @@ window.renderNotifications = function() {
     const bellIconDiv = document.getElementById('notification-bell');
     const badge = document.getElementById('notif-badge');
     if(bellIconDiv && badge) {
+        if(!bellIconDiv.hasListener) {
+            bellIconDiv.addEventListener('click', () => {
+                if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+                    Notification.requestPermission();
+                }
+            });
+            bellIconDiv.hasListener = true;
+        }
+
         if(currentUser && currentUser.role === 'Admin') {
             bellIconDiv.style.display = 'block';
             if(unread > 0) {

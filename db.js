@@ -72,8 +72,19 @@ db.collection('gym_clients').onSnapshot(snap => {
     }
 });
 
+let isInitialActivityLoad = true;
 db.collection('gym_activity').onSnapshot(snap => {
     localData.gym_activity = snap.docs.map(doc => doc.data());
+    
+    if(!isInitialActivityLoad && window.triggerDeviceNotification) {
+        snap.docChanges().forEach(change => {
+            if(change.type === 'added') {
+                window.triggerDeviceNotification("🔔 Actualización del Gym", change.doc.data().action);
+            }
+        });
+    }
+    isInitialActivityLoad = false;
+
     if(window.renderNotifications) window.renderNotifications();
 });
 
