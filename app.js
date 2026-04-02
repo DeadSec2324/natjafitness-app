@@ -157,9 +157,25 @@ function setupModals() {
     }
 }
 
-window.closeModal = function(modalId) {
-    document.getElementById(modalId).classList.remove('active');
+// Global Functions
+function openModal(id) {
+    document.getElementById(id).classList.add('active');
 }
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
+
+window.editUser = function(id) {
+    const user = DB.UserDB.getAll().find(u => u.id === id);
+    if(user) {
+        document.getElementById('modal-user-title').innerText = 'Editar Usuario';
+        document.getElementById('user-id').value = user.id;
+        document.getElementById('user-username').value = user.username;
+        document.getElementById('user-password').value = '';
+        document.getElementById('user-role').value = user.role;
+        openModal('modal-user-form');
+    }
+};
 
 // Forms & Logic
 function setupForms() {
@@ -179,8 +195,10 @@ function setupForms() {
             
             if (id) {
                 DB.InventoryDB.update(id, item);
+                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `Editó el producto ${item.name}`);
             } else {
                 DB.InventoryDB.add(item);
+                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `Añadió el producto nuevo ${item.name}`);
             }
             closeModal('modal-item-form');
             renderInventory();
@@ -188,16 +206,31 @@ function setupForms() {
     }
     
     // User Form
+    document.getElementById('btn-add-user')?.addEventListener('click', () => {
+        document.getElementById('modal-user-title').innerText = 'Nuevo Usuario';
+        document.getElementById('user-form').reset();
+        document.getElementById('user-id').value = '';
+        document.getElementById('modal-user-form').classList.add('active');
+    });
     const userForm = document.getElementById('user-form');
     if(userForm) {
         userForm.addEventListener('submit', (e) => {
             e.preventDefault();
             try {
-                DB.UserDB.add({
+                const id = document.getElementById('user-id').value;
+                const pwd = document.getElementById('user-password').value;
+                const usrData = {
                     username: document.getElementById('user-username').value,
-                    password: document.getElementById('user-password').value,
                     role: document.getElementById('user-role').value
-                });
+                };
+                if(pwd) usrData.password = pwd;
+
+                if (id) {
+                    DB.UserDB.update(id, usrData);
+                } else {
+                    if(!pwd) throw new Error("La contraseña es obligatoria para usuarios nuevos");
+                    DB.UserDB.add(usrData);
+                }
                 closeModal('modal-user-form');
                 renderUsers();
             } catch (err) {
@@ -237,8 +270,10 @@ function setupForms() {
             
             if (id) {
                 DB.ClientsDB.update(id, client);
+                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `Editó al cliente ${client.name} ${client.surname}`);
             } else {
                 DB.ClientsDB.add(client);
+                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `Registró al nuevo cliente ${client.name} ${client.surname}`);
             }
             closeModal('modal-client-form');
             renderClients();
@@ -258,6 +293,10 @@ function setupForms() {
             
             try {
                 DB.InventoryDB.adjustStock(id, amount, currentUser.id, type);
+                if(currentUser.role === 'Staff') {
+                    const item = DB.InventoryDB.getById(id);
+                    DB.ActivityDB.log(currentUser.username, `Registró una ${type === 'IN' ? 'entrada' : 'salida'} manual de ${Math.abs(amount)} unidades en ${item.name}`);
+                }
                 closeModal('modal-stock-form');
                 renderInventory();
             } catch(err) {
@@ -314,6 +353,7 @@ function setupForms() {
             }
             try {
                 DB.SalesDB.processSale(currentUser.id, cart);
+                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `Procesó una venta de ${cart.length} productos diferentes`);
                 alert("Venta procesada con éxito");
                 cart = [];
                 renderCart();
@@ -517,12 +557,100 @@ function renderUsers() {
                 <td>${u.username}</td>
                 <td>${u.role}</td>
                 <td class="action-btns">
-                    ${u.username !== 'admin' ? `<button class="btn-icon" style="color: var(--danger-color)" onclick="deleteUser('${u.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : '-'}
+                    ${u.username !== 'admin' ? `
+                        <button class="btn-icon" style="color: var(--primary-color)" onclick="editUser('${u.id}')" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" style="color: var(--danger-color)" onclick="deleteUser('${u.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                    ` : `
+                        <button class="btn-icon" style="color: var(--primary-color)" onclick="editUser('${u.id}')" title="Editar Contraseña"><i class="fas fa-edit"></i></button>
+                    `}
                 </td>
             </tr>
         `;
     });
 }
+
+window.renderNotifications = function() {
+    const activity = DB.ActivityDB.getAll().sort((a,b) => new Date(b.date) - new Date(a.date));
+    const unread = activity.filter(a => !a.readByAdmin).length;
+    
+    // Update Bell Widget
+    const bellIconDiv = document.getElementById('notification-bell');
+    const badge = document.getElementById('notif-badge');
+    if(bellIconDiv && badge) {
+        if(currentUser && currentUser.role === 'Admin') {
+            bellIconDiv.style.display = 'block';
+            if(unread > 0) {
+                badge.style.display = 'block';
+                badge.innerText = unread > 9 ? '9+' : unread;
+            } else {
+                badge.style.display = 'none';
+            }
+        } else {
+            bellIconDiv.style.display = 'none';
+        }
+    }
+
+    // Update List
+    const list = document.getElementById('notifications-list');
+    if(!list) return;
+    list.innerHTML = '';
+    
+    if(activity.length === 0) {
+        list.innerHTML = '<p style="text-align:center; color: var(--text-secondary);">No hay actividad reciente.</p>';
+        return;
+    }
+    
+    activity.slice(0, 30).forEach(act => {
+        const bg = act.readByAdmin ? 'transparent' : 'rgba(16, 185, 129, 0.1)';
+        const dateStr = new Date(act.date).toLocaleString([], {hour: '2-digit', minute:'2-digit', month:'short', day:'numeric'});
+        list.innerHTML += `
+            <div style="background: ${bg}; padding: 0.75rem; border-radius: 4px; border-bottom: 1px solid var(--border-color);">
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.2rem;">${dateStr} - <b>${act.username}</b></div>
+                <div style="font-size: 0.95rem;">${act.action}</div>
+            </div>
+        `;
+    });
+}
+
+window.renderMessages = function() {
+    const msgs = DB.MessagesDB.getAll().sort((a,b) => new Date(a.date) - new Date(b.date));
+    const box = document.getElementById('chat-box');
+    if(!box) return;
+    
+    box.innerHTML = '';
+    msgs.forEach(m => {
+        const isMe = currentUser && m.sender === currentUser.username;
+        const align = isMe ? 'flex-end' : 'flex-start';
+        const bg = isMe ? 'var(--primary-color)' : 'var(--card-bg)';
+        const color = isMe ? 'white' : 'var(--text-primary)';
+        
+        box.innerHTML += `
+            <div style="align-self: ${align}; max-width: 80%; display: flex; flex-direction: column;">
+                <span style="font-size: 0.7rem; color: var(--text-secondary); margin-left: 5px; margin-right: 5px; text-align: ${isMe ? 'right' : 'left'}">${m.sender}</span>
+                <div style="background: ${bg}; color: ${color}; padding: 0.75rem 1rem; border-radius: 12px; margin-top: 2px;">
+                    ${m.text}
+                </div>
+            </div>
+        `;
+    });
+    box.scrollTop = box.scrollHeight;
+}
+
+// Chat Form Listener
+document.addEventListener('DOMContentLoaded', () => {
+    const msgForm = document.getElementById('message-form');
+    if(msgForm) {
+        msgForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const input = document.getElementById('message-input');
+            const txt = input.value.trim();
+            if(txt && currentUser) {
+                DB.MessagesDB.add(currentUser.username, txt);
+                input.value = '';
+            }
+        });
+    }
+});
 
 function renderClients() {
     const clients = DB.ClientsDB.getAll();

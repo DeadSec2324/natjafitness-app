@@ -20,7 +20,9 @@ let localData = {
     gym_inventory: [],
     gym_transactions: [],
     gym_sales: [],
-    gym_clients: []
+    gym_clients: [],
+    gym_activity: [],
+    gym_messages: []
 };
 
 // Listeners for realtime update
@@ -70,6 +72,16 @@ db.collection('gym_clients').onSnapshot(snap => {
     }
 });
 
+db.collection('gym_activity').onSnapshot(snap => {
+    localData.gym_activity = snap.docs.map(doc => doc.data());
+    if(window.renderNotifications) window.renderNotifications();
+});
+
+db.collection('gym_messages').onSnapshot(snap => {
+    localData.gym_messages = snap.docs.map(doc => doc.data());
+    if(window.renderMessages && document.getElementById('view-messages') && document.getElementById('view-messages').classList.contains('active')) window.renderMessages();
+});
+
 // Helpers
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -86,6 +98,9 @@ const UserDB = {
         const newUser = { id: generateId(), username: user.username, password: user.password, role: user.role };
         db.collection('gym_users').doc(newUser.id).set(newUser);
         return newUser;
+    },
+    update: (id, updates) => {
+        db.collection('gym_users').doc(id).update(updates);
     },
     remove: (id) => {
         db.collection('gym_users').doc(id).delete();
@@ -206,10 +221,46 @@ const ClientsDB = {
     }
 };
 
+// Activity Methods
+const ActivityDB = {
+    getAll: () => localData.gym_activity,
+    log: (username, action) => {
+        const item = {
+            id: generateId(),
+            username,
+            action,
+            date: new Date().toISOString(),
+            readByAdmin: false
+        };
+        db.collection('gym_activity').doc(item.id).set(item);
+    },
+    markAllRead: () => {
+        localData.gym_activity.filter(a => !a.readByAdmin).forEach(a => {
+            db.collection('gym_activity').doc(a.id).update({ readByAdmin: true });
+        });
+    }
+};
+
+// Messages Methods
+const MessagesDB = {
+    getAll: () => localData.gym_messages,
+    add: (senderName, text) => {
+        const msg = {
+            id: generateId(),
+            sender: senderName,
+            text: text,
+            date: new Date().toISOString()
+        };
+        db.collection('gym_messages').doc(msg.id).set(msg);
+    }
+};
+
 window.DB = {
     UserDB,
     InventoryDB,
     SalesDB,
     TransactionsDB,
-    ClientsDB
+    ClientsDB,
+    ActivityDB,
+    MessagesDB
 };
