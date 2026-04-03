@@ -107,7 +107,7 @@
                                 <span>Ventas Totales</span>
                             </div>
                         </div>
-                        <div class="glass-panel stat-card">
+                        <div class="glass-panel stat-card admin-only">
                             <div class="stat-icon" style="background: rgba(59, 130, 246, 0.2); color: var(--primary-color);"><i class="fas fa-piggy-bank"></i></div>
                             <div class="stat-info">
                                 <h3 id="stat-total-profit">$0.00</h3>
@@ -117,19 +117,19 @@
                     </div>
                     
                     <!-- Data Backup (Admin only) -->
-                    <div class="glass-panel" id="backup-panel" style="padding: 1.5rem; margin-bottom: 1.5rem; display: none;">
+                    <div class="glass-panel admin-only" id="backup-panel" style="padding: 1.5rem; margin-bottom: 1.5rem; display: none;">
                         <h3>Gestión de Datos y Respaldos</h3>
                         <p style="margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Debido a que hemos migrado a la nube, los datos ya están seguros y respaldados por Google Firebase de manera automática.</p>
                     </div>
 
-                    <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                    <div class="glass-panel admin-only" style="padding: 1.5rem; margin-bottom: 1.5rem;">
                         <h3>Stock Individual por Producto</h3>
                         <div class="stats-grid" id="product-stock-cards" style="gap: 1rem;">
                             <!-- Populated by JS -->
                         </div>
                     </div>
                     
-                    <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                    <div class="glass-panel admin-only" style="padding: 1.5rem; margin-bottom: 1.5rem;">
                         <h3>Reporte por Producto</h3>
                         <div class="table-container">
                             <table id="product-report-table">
@@ -147,7 +147,7 @@
                         </div>
                     </div>
                     
-                    <div class="glass-panel" style="padding: 1.5rem;">
+                    <div class="glass-panel admin-only" style="padding: 1.5rem;">
                         <h3>Movimientos Recientes</h3>
                         <div class="table-container">
                             <table id="recent-transactions-table">
@@ -172,7 +172,7 @@
                     <div class="glass-panel" style="padding: 1.5rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                             <h3>Gestión de Inventario</h3>
-                            <button id="btn-add-item" class="btn-primary"><i class="fas fa-plus"></i> Nuevo Artículo</button>
+                            <button id="btn-add-item" class="btn-primary admin-only"><i class="fas fa-plus"></i> Nuevo Artículo</button>
                         </div>
                         <div class="table-container">
                             <table id="inventory-table">
@@ -184,7 +184,7 @@
                                         <th>Costo</th>
                                         <th>Precio Venta</th>
                                         <th>Stock</th>
-                                        <th>Acciones</th>
+                                        <th class="admin-only">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -243,7 +243,7 @@
                         </div>
                     </div>
                     
-                    <div class="glass-panel" style="padding: 1.5rem; margin-top: 1.5rem;" id="print-area">
+                    <div class="glass-panel admin-only" style="padding: 1.5rem; margin-top: 1.5rem;" id="print-area">
                         <h3>Historial de Ventas</h3>
                         <div class="table-container">
                             <table id="sales-history-table">
@@ -317,7 +317,7 @@
                                             <th>Contacto</th>
                                             <th>Plan</th>
                                             <th>Pago</th>
-                                            <th>Acciones</th>
+                                            <th class="admin-only">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -497,6 +497,31 @@
             <button class="btn-primary" onclick="DB.ActivityDB.markAllRead(); closeModal('modal-notifications')" style="margin-top: 1rem; width: 100%;">Marcar todas como leídas</button>
         </div>
     </div>
+
+    <!-- Auth Confirm Modal -->
+    <div class="modal-overlay" id="modal-auth-confirm" style="z-index: 10000;">
+        <div class="glass-panel modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header">
+                <h3><i class="fas fa-lock"></i> Autorizar Acción</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-auth-confirm')"></i>
+            </div>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">Por favor selecciona tu usuario e ingresa tu contraseña para firmar el movimiento.</p>
+            <form id="auth-confirm-form">
+                <select id="auth-confirm-user" required style="margin-bottom: 1rem;">
+                    <!-- Populated by JS -->
+                </select>
+                <input type="password" id="auth-confirm-pass" placeholder="Contraseña" required style="margin-bottom: 1rem;">
+                <button type="submit" class="btn-primary" style="width: 100%;">Confirmar y Procesar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Global CSS for Staff Role Restrictions -->
+    <style>
+        body.role-staff .admin-only {
+            display: none !important;
+        }
+    </style>
 
     <!-- Scripts -->
     <script src="db.js"></script>

@@ -37,10 +37,12 @@ function showApp() {
     document.getElementById('current-user-name').innerText = currentUser.username;
     
     // Check role, hide users tab if not admin
-    if (currentUser.role !== 'Admin') {
+    if (currentUser.role === 'Staff') {
+        document.body.classList.add('role-staff');
         document.getElementById('nav-users').style.display = 'none';
         if(document.getElementById('backup-panel')) document.getElementById('backup-panel').style.display = 'none';
     } else {
+        document.body.classList.remove('role-staff');
         document.getElementById('nav-users').style.display = 'flex';
         if(document.getElementById('backup-panel')) document.getElementById('backup-panel').style.display = 'block';
     }
@@ -165,6 +167,19 @@ function closeModal(id) {
     document.getElementById(id).classList.remove('active');
 }
 
+let pendingAuthCallback = null;
+window.requireAuth = function(callback) {
+    const sel = document.getElementById('auth-confirm-user');
+    if(!sel) return;
+    sel.innerHTML = '<option value="" disabled selected>Selecciona tu usuario...</option>';
+    DB.UserDB.getAll().forEach(u => {
+        sel.innerHTML += `<option value="${u.username}">${u.username} (${u.role})</option>`;
+    });
+    document.getElementById('auth-confirm-pass').value = '';
+    pendingAuthCallback = callback;
+    openModal('modal-auth-confirm');
+};
+
 window.triggerDeviceNotification = function(title, body) {
     if (currentUser && currentUser.role === 'Admin') {
         if ("Notification" in window && Notification.permission === "granted") {
@@ -210,6 +225,34 @@ function setupForms() {
             }
             closeModal('modal-item-form');
             renderInventory();
+        });
+    }
+
+    // Modal de Intercepción de Autorización
+    const authConfirmForm = document.getElementById('auth-confirm-form');
+    if(authConfirmForm) {
+        authConfirmForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const user = document.getElementById('auth-confirm-user').value;
+            const pass = document.getElementById('auth-confirm-pass').value;
+            
+            const authUser = DB.UserDB.login(user, pass);
+            if (authUser) {
+                closeModal('modal-auth-confirm');
+                if(pendingAuthCallback) {
+                    pendingAuthCallback(authUser);
+                    pendingAuthCallback = null;
+                }
+                
+                // Auto-logout para proteger la cuenta actual en la PC compartida
+                setTimeout(() => {
+                    const btn = document.getElementById('btn-logout');
+                    if(btn) btn.click();
+                }, 500);
+
+            } else {
+                alert("Contraseña incorrecta. Intenta de nuevo.");
+            }
         });
     }
     
@@ -276,15 +319,17 @@ function setupForms() {
                 payment_date: paymentDate
             };
             
-            if (id) {
-                DB.ClientsDB.update(id, client);
-                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `Editó al cliente ${client.name} ${client.surname}`);
-            } else {
-                DB.ClientsDB.add(client);
-                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `Registró al nuevo cliente ${client.name} ${client.surname}`);
-            }
-            closeModal('modal-client-form');
-            renderClients();
+            requireAuth((authUser) => {
+                if (id) {
+                    DB.ClientsDB.update(id, client);
+                    if(authUser.role === 'Staff') DB.ActivityDB.log(authUser.username, `Editó al cliente ${client.name} ${client.surname}`);
+                } else {
+                    DB.ClientsDB.add(client);
+                    if(authUser.role === 'Staff') DB.ActivityDB.log(authUser.username, `Registró al nuevo cliente ${client.name} ${client.surname}`);
+                }
+                closeModal('modal-client-form');
+                renderClients();
+            });
         });
     }
     
@@ -325,14 +370,14 @@ function setupForms() {
             if(!item) return;
             
             if(item.quantity < qty) {
-                alert("Stock insuficiente para añadir al carrito.");
+                alert(`OUT OF STOCK!\n\nNo hay suficiente inventario de "${item.name}".\nPor favor, solicita a un Administrador que ingrese más stock para continuar.`);
                 return;
             }
             
             const existing = cart.find(c => c.id === itemId);
             if(existing) {
                 if (item.quantity < existing.qty + qty) {
-                    alert("Stock insuficiente para añadir más de este artículo.");
+                    alert(`OUT OF STOCK!\n\nNo hay suficiente inventario de "${item.name}".\nPor favor, solicita a un Administrador que ingrese más stock para continuar.`);
                     return;
                 }
                 existing.qty += qty;
@@ -359,20 +404,26 @@ function setupForms() {
                 alert("El carrito está vacío");
                 return;
             }
-            try {
-                DB.SalesDB.processSale(currentUser.id, cart);
-                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `Procesó una venta de ${cart.length} productos diferentes`);
-                alert("Venta procesada con éxito");
-                cart = [];
-                renderCart();
-                document.getElementById('btn-print-invoice').disabled = false;
-                renderSalesHistory();
-                
-                // Reload select just in case some stock went 0
-                populateSalesSelect();
-            } catch (error) {
-                alert("Error al procesar: " + error.message);
-            }
+            requireAuth((authUser) => {
+                try {
+                    DB.SalesDB.processSale(authUser.id, cart);
+                    if(authUser.role === 'Staff') DB.ActivityDB.log(authUser.username, `Procesó una venta de ${cart.length} productos diferentes`);
+                    alert("Venta procesada con éxito");
+                    cart = [];
+                    renderCart();
+                    document.getElementById('btn-print-invoice').disabled = false;
+                    renderSalesHistory();
+                    
+                    // Reload select just in case some stock went 0
+                    populateSalesSelect();
+                } catch (error) {
+                    if(error.message.includes("Stock insuficiente")) {
+                        alert(`OUT OF STOCK!\n\nEl sistema detectó que no hay inventario suficiente para procesar la venta.\nPor favor, solicita a un Administrador que ajuste el stock antes de continuar.`);
+                    } else {
+                        alert("Error al procesar: " + error.message);
+                    }
+                }
+            });
         });
     }
     
@@ -482,7 +533,7 @@ function renderInventory() {
                 <td>$${parseFloat(item.cost_price || 0).toFixed(2)}</td>
                 <td>$${parseFloat(item.price).toFixed(2)}</td>
                 <td style="color: ${item.quantity <= 5 ? 'var(--danger-color)' : 'inherit'}; font-weight: ${item.quantity <= 5 ? 'bold' : 'normal'}">${item.quantity}</td>
-                <td class="action-btns">
+                <td class="action-btns admin-only">
                     <button class="btn-icon" onclick="editItem('${item.id}')" title="Editar"><i class="fas fa-edit"></i></button>
                     <button class="btn-icon" onclick="adjustStockForm('${item.id}')" title="Ajustar Stock"><i class="fas fa-exchange-alt"></i></button>
                     ${currentUser.role === 'Admin' ? `<button class="btn-icon" style="color: var(--danger-color)" onclick="deleteItem('${item.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
@@ -740,7 +791,7 @@ window.showClientsCategory = function(category) {
                     <td>${c.address} <br> <small style="color:var(--text-secondary)"><i class="fas fa-phone"></i> ${c.phone}</small></td>
                     <td>${c.plan_type}</td>
                     <td>${pdate} ${expBadge}</td>
-                    <td class="action-btns">
+                    <td class="action-btns admin-only">
                         <button class="btn-icon" onclick="editClient('${c.id}')" title="Editar"><i class="fas fa-edit"></i></button>
                         ${currentUser.role === 'Admin' ? `<button class="btn-icon" style="color: var(--danger-color)" onclick="deleteClient('${c.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
                     </td>
