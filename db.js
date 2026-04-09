@@ -93,6 +93,7 @@ db.collection('gym_activity').onSnapshot(snap => {
 
 db.collection('gym_messages').onSnapshot(snap => {
     localData.gym_messages = snap.docs.map(doc => doc.data());
+    if(window.checkDirectMessages) window.checkDirectMessages(snap);
     if(window.renderMessages && document.getElementById('view-messages') && document.getElementById('view-messages').classList.contains('active')) window.renderMessages();
 });
 
@@ -284,14 +285,19 @@ const ActivityDB = {
 // Messages Methods
 const MessagesDB = {
     getAll: () => localData.gym_messages,
-    add: (senderName, text) => {
+    add: (senderName, text, recipient = 'ALL') => {
         const msg = {
             id: generateId(),
             sender: senderName,
+            recipient: recipient,
             text: text,
+            read: false,
             date: new Date().toISOString()
         };
         db.collection('gym_messages').doc(msg.id).set(msg);
+    },
+    markAsRead: (id) => {
+        db.collection('gym_messages').doc(id).update({ read: true });
     }
 };
 

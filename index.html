@@ -428,15 +428,27 @@
 
                 <!-- Messages View -->
                 <section id="view-messages" class="view-section">
-                    <div class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column; height: 80vh;">
-                        <h3>Buzón de Mensajes Interno</h3>
-                        <div id="chat-box" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.1); border-radius: 8px; padding: 1rem; margin-top: 1rem; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem; border: 1px solid var(--border-color);">
-                            <!-- Messages go here -->
+                    <div style="display: flex; gap: 1rem; height: 80vh;">
+                        <div class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column; flex: 3;">
+                            <h3>Buzón de Mensajes Interno</h3>
+                            <div id="chat-box" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.1); border-radius: 8px; padding: 1rem; margin-top: 1rem; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem; border: 1px solid var(--border-color);">
+                                <!-- Messages go here -->
+                            </div>
+                            <form id="message-form" style="display: flex; gap: 0.5rem; margin-bottom: 0;">
+                                <select id="message-recipient" style="width: auto; margin-bottom: 0;" class="admin-only">
+                                    <option value="ALL">Para: Todos</option>
+                                    <!-- Populated by JS -->
+                                </select>
+                                <input type="text" id="message-input" placeholder="Escribe un aviso o mensaje al equipo..." required style="margin-bottom: 0; flex: 1;">
+                                <button type="submit" class="btn-primary" style="padding: 0.5rem 1.5rem;"><i class="fas fa-paper-plane"></i> Enviar</button>
+                            </form>
                         </div>
-                        <form id="message-form" style="display: flex; gap: 0.5rem; margin-bottom: 0;">
-                            <input type="text" id="message-input" placeholder="Escribe un aviso o mensaje al equipo..." required style="margin-bottom: 0; flex: 1;">
-                            <button type="submit" class="btn-primary" style="padding: 0.5rem 1.5rem;"><i class="fas fa-paper-plane"></i> Enviar</button>
-                        </form>
+                        <div class="glass-panel" style="padding: 1.5rem; flex: 1; overflow-y: auto;">
+                            <h3 style="font-size: 1.1rem; margin-bottom: 1rem;"><i class="fas fa-users"></i> Staff Activo</h3>
+                            <div id="online-users-list" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -522,9 +534,8 @@
                 <input type="text" id="user-username" placeholder="Nombre de usuario" required>
                 <input type="password" id="user-password" placeholder="Contraseña nueva (Dejar vacío si no quieres cambiarla)" required>
                 <select id="user-role" required>
-                    <option value="Staff">Staff (Solo ventas y ver inventario)</option>
+                    <option value="Staff">Staff / Entrenador (Solo ventas, inventario y clientes)</option>
                     <option value="Admin">Administrador (Acceso total)</option>
-                    <option value="Entrenador">Entrenador (Acceso clientes)</option>
                 </select>
                 <input type="number" id="user-training-price" placeholder="Tarifa Entrenador Mensual ($) - Opcional" step="0.01" style="margin-top:1rem;">
                 <div style="display: flex; gap: 1rem; margin-top: 1rem;">
@@ -631,6 +642,23 @@
                     <button type="submit" class="btn-success" style="flex:1;">Procesar Pase</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Direct Message Modal (Bloqueante) -->
+    <div class="modal-overlay" id="modal-direct-message" style="z-index: 9999; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);">
+        <div class="glass-panel modal-content" style="max-width: 450px; text-align: center; border: 2px solid var(--primary-color); box-shadow: 0 0 40px rgba(10, 132, 255, 0.4);">
+            <div style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;"><i class="fas fa-envelope-open-text"></i></div>
+            <h3 style="color: var(--primary-color); margin-bottom: 0.5rem;" id="dm-sender-title">Nuevo Mensaje Directo</h3>
+            <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: left; font-size: 1.1rem; line-height: 1.5;" id="dm-text">
+                <!-- Message text -->
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="button" class="btn-primary" style="flex: 1; padding: 1rem; font-size: 1.1rem; font-weight: bold;" id="btn-dm-read">✔ Entendido / Leído</button>
+            </div>
+            <div id="dm-reply-section" style="margin-top: 1rem;">
+                <small style="color: var(--text-secondary); cursor: pointer; text-decoration: underline;" onclick="document.getElementById('nav-messages').click(); closeModal('modal-direct-message');">Ir al Chat para Responder</small>
+            </div>
         </div>
     </div>
 

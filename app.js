@@ -199,9 +199,7 @@ function populateTrainerSelect() {
     if(!sel) return;
     sel.innerHTML = '<option value="" disabled selected>Asignar Entrenador</option><option value="NONE">Sin Asignar</option>';
     DB.UserDB.getAll().forEach(u => {
-        if(u.role === 'Entrenador' || u.role === 'Admin') {
-             sel.innerHTML += `<option value="${u.id}">${u.username} (${u.role})</option>`;
-        }
+        sel.innerHTML += `<option value="${u.id}">${u.username} (${u.role})</option>`;
     });
 }
 
@@ -761,7 +759,19 @@ function renderUsers() {
 
 window.renderNotifications = function() {
     const activity = DB.ActivityDB.getAll().sort((a,b) => new Date(b.date) - new Date(a.date));
-    const unread = activity.filter(a => !a.readByAdmin).length;
+    const messages = DB.MessagesDB.getAll();
+    
+    let displayList = [];
+    let unreadCount = 0;
+    
+    if(currentUser && currentUser.role === 'Admin') {
+        displayList = activity;
+        unreadCount = activity.filter(a => !a.readByAdmin).length;
+    } else if (currentUser) {
+        const myUnreadMsgs = messages.filter(m => m.recipient === currentUser.username && !m.read);
+        displayList = myUnreadMsgs.map(m => ({ action: m.text, username: m.sender, date: m.date, readByAdmin: m.read }));
+        unreadCount = myUnreadMsgs.length;
+    }
     
     // Update Bell Widget
     const bellIconDiv = document.getElementById('notification-bell');
@@ -772,20 +782,19 @@ window.renderNotifications = function() {
                 if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
                     Notification.requestPermission();
                 }
+                if(currentUser && currentUser.role !== 'Admin') {
+                    document.getElementById('nav-messages').click();
+                }
             });
             bellIconDiv.hasListener = true;
         }
 
-        if(currentUser && currentUser.role === 'Admin') {
-            bellIconDiv.style.display = 'block';
-            if(unread > 0) {
-                badge.style.display = 'block';
-                badge.innerText = unread > 9 ? '9+' : unread;
-            } else {
-                badge.style.display = 'none';
-            }
+        bellIconDiv.style.display = 'block';
+        if(unreadCount > 0) {
+            badge.style.display = 'block';
+            badge.innerText = unreadCount > 9 ? '9+' : unreadCount;
         } else {
-            bellIconDiv.style.display = 'none';
+            badge.style.display = 'none';
         }
     }
 
@@ -794,12 +803,12 @@ window.renderNotifications = function() {
     if(!list) return;
     list.innerHTML = '';
     
-    if(activity.length === 0) {
-        list.innerHTML = '<p style="text-align:center; color: var(--text-secondary);">No hay actividad reciente.</p>';
+    if(displayList.length === 0) {
+        list.innerHTML = '<p style="text-align:center; color: var(--text-secondary);">No hay notificaciones.</p>';
         return;
     }
     
-    activity.slice(0, 30).forEach(act => {
+    displayList.slice(0, 30).forEach(act => {
         const bg = act.readByAdmin ? 'transparent' : 'rgba(16, 185, 129, 0.1)';
         const dateStr = new Date(act.date).toLocaleString([], {hour: '2-digit', minute:'2-digit', month:'short', day:'numeric'});
         list.innerHTML += `
@@ -811,24 +820,94 @@ window.renderNotifications = function() {
     });
 }
 
+let currentProcessingDMs = new Set();
+window.checkDirectMessages = function(snap) {
+    if(!currentUser) return;
+    snap.docChanges().forEach(change => {
+        if(change.type === 'added' || change.type === 'modified') {
+            const msg = change.doc.data();
+            if(msg.recipient === currentUser.username && msg.read === false) {
+                if(!currentProcessingDMs.has(msg.id)) {
+                    currentProcessingDMs.add(msg.id);
+                    document.getElementById('dm-sender-title').innerText = "Mensaje de " + msg.sender;
+                    document.getElementById('dm-text').innerText = msg.text;
+                    
+                    const btnRead = document.getElementById('btn-dm-read');
+                    btnRead.onclick = function() {
+                        DB.MessagesDB.markAsRead(msg.id);
+                        closeModal('modal-direct-message');
+                        currentProcessingDMs.delete(msg.id);
+                    };
+                    
+                    openModal('modal-direct-message');
+                    if(window.triggerDeviceNotification) {
+                        window.triggerDeviceNotification("¡Urgente!", "Mensaje de " + msg.sender);
+                    }
+                }
+            }
+        }
+    });
+};
+
 window.renderMessages = function() {
-    const msgs = DB.MessagesDB.getAll().sort((a,b) => new Date(a.date) - new Date(b.date));
+    const allMsgs = DB.MessagesDB.getAll().sort((a,b) => new Date(a.date) - new Date(b.date));
     const box = document.getElementById('chat-box');
-    if(!box) return;
+    if(!box || !currentUser) return;
+    
+    const onlineList = document.getElementById('online-users-list');
+    const recipientSelect = document.getElementById('message-recipient');
+    if(onlineList && recipientSelect) {
+        onlineList.innerHTML = '';
+        
+        const currentSelected = recipientSelect.value;
+        const recipientOptions = ['<option value="ALL">Para: Todos</option>'];
+        
+        DB.UserDB.getAll().forEach(u => {
+            if(u.username !== currentUser.username) {
+               recipientOptions.push(`<option value="${u.username}">Para: ${u.username}</option>`);
+            }
+            
+            const statusClass = u.is_online ? 'status-online' : 'status-offline';
+            const statusText = u.is_online ? 'En Línea' : 'Desconectado';
+            onlineList.innerHTML += `
+               <div style="display: flex; align-items: center; gap: 0.5rem;">
+                   <span class="status-dot ${statusClass}"></span>
+                   <span style="color:var(--text-primary); font-size:0.95rem;">${u.username}</span>
+                   <span style="color:var(--text-secondary); font-size:0.8rem; margin-left:auto;">${statusText}</span>
+               </div>
+            `;
+        });
+        
+        recipientSelect.innerHTML = recipientOptions.join('');
+        if(currentSelected) recipientSelect.value = currentSelected;
+        
+        recipientSelect.style.display = 'block';
+    }
     
     box.innerHTML = '';
-    msgs.forEach(m => {
-        const isMe = currentUser && m.sender === currentUser.username;
+    allMsgs.forEach(m => {
+        if(m.recipient !== 'ALL' && m.recipient !== currentUser.username && m.sender !== currentUser.username) return;
+        
+        const isMe = m.sender === currentUser.username;
+        const isDM = m.recipient !== 'ALL';
         const align = isMe ? 'flex-end' : 'flex-start';
         const bg = isMe ? 'var(--primary-color)' : 'var(--card-bg)';
         const color = isMe ? 'white' : 'var(--text-primary)';
+        const borderIndicator = isDM && !isMe ? 'border-left: 4px solid var(--danger-color);' : '';
+        const titleBadge = isDM ? `<span style="background:var(--danger-color); color:white; font-size:0.6rem; padding: 2px 5px; border-radius: 4px; margin-left:5px;">DIRECTO</span>` : '';
         
+        let readIndicator = '';
+        if(isMe && isDM) {
+             readIndicator = m.read ? '<span style="font-size:0.75rem; color:var(--success-color); margin-top:2px;">✔✔ Leído</span>' : '<span style="font-size:0.75rem; color:rgba(255,255,255,0.7); margin-top:2px;">✔ Entregado</span>';
+        }
+
         box.innerHTML += `
             <div style="align-self: ${align}; max-width: 80%; display: flex; flex-direction: column;">
-                <span style="font-size: 0.7rem; color: var(--text-secondary); margin-left: 5px; margin-right: 5px; text-align: ${isMe ? 'right' : 'left'}">${m.sender}</span>
-                <div style="background: ${bg}; color: ${color}; padding: 0.75rem 1rem; border-radius: 12px; margin-top: 2px;">
+                <span style="font-size: 0.7rem; color: var(--text-secondary); margin-left: 5px; margin-right: 5px; text-align: ${isMe ? 'right' : 'left'}">${m.sender} ${titleBadge}</span>
+                <div style="background: ${bg}; color: ${color}; padding: 0.75rem 1rem; border-radius: 12px; margin-top: 2px; ${borderIndicator}">
                     ${m.text}
                 </div>
+                <div style="text-align: ${isMe ? 'right' : 'left'}; margin-bottom: 0.5rem">${readIndicator}</div>
             </div>
         `;
     });
@@ -842,9 +921,13 @@ document.addEventListener('DOMContentLoaded', () => {
         msgForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const input = document.getElementById('message-input');
+            const recpNode = document.getElementById('message-recipient');
+            
             const txt = input.value.trim();
+            const recipient = recpNode ? recpNode.value : 'ALL';
+            
             if(txt && currentUser) {
-                DB.MessagesDB.add(currentUser.username, txt);
+                DB.MessagesDB.add(currentUser.username, txt, recipient);
                 input.value = '';
             }
         });
@@ -1209,7 +1292,7 @@ window.renderReports = function() {
     const trBody = document.querySelector('#trainer-performance-table tbody');
     if(trBody) {
         trBody.innerHTML = '';
-        const users = DB.UserDB.getAll().filter(u => u.role === 'Entrenador' || u.role === 'Admin');
+        const users = DB.UserDB.getAll();
         const clients = DB.ClientsDB.getAll();
         
         users.forEach(u => {
@@ -1218,7 +1301,7 @@ window.renderReports = function() {
             const tPrice = u.training_price || 0;
             const expectedProfit = clientsCount * tPrice;
             
-            if(clientsCount > 0 || u.role === 'Entrenador') {
+            if(clientsCount > 0 || u.role === 'Entrenador' || u.role === 'Staff') {
                 trBody.innerHTML += `
                     <tr>
                         <td><strong>${u.username}</strong></td>
