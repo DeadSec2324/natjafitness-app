@@ -34,7 +34,10 @@ db.collection('gym_users').onSnapshot(snap => {
             id: generateId(),
             username: 'admin',
             password: 'admin', 
-            role: 'Admin'
+            role: 'Admin',
+            is_online: false,
+            last_login: null,
+            first_login_today: null
         };
         db.collection('gym_users').doc(defaultUser.id).set(defaultUser);
     }
@@ -106,7 +109,16 @@ const UserDB = {
     getAll: () => localData.gym_users,
     add: (user) => {
         if(localData.gym_users.some(u => u.username === user.username)) throw new Error("El usuario ya existe");
-        const newUser = { id: generateId(), username: user.username, password: user.password, role: user.role };
+        const newUser = { 
+            id: generateId(), 
+            username: user.username, 
+            password: user.password, 
+            role: user.role,
+            training_price: Number(user.training_price) || 0,
+            is_online: false,
+            last_login: null,
+            first_login_today: null
+        };
         db.collection('gym_users').doc(newUser.id).set(newUser);
         return newUser;
     },
@@ -166,7 +178,7 @@ const InventoryDB = {
 // Sales Methods
 const SalesDB = {
     getAll: () => localData.gym_sales,
-    processSale: (userId, cartItems) => {
+    processSale: (userId, cartItems, paymentMethod = 'Efectivo') => {
         let totalAmount = 0;
         let totalCost = 0;
         
@@ -194,6 +206,21 @@ const SalesDB = {
             total_cost: totalCost,
             total_amount: totalAmount,
             profit: totalAmount - totalCost,
+            payment_method: paymentMethod,
+            date: new Date().toISOString()
+        };
+        db.collection('gym_sales').doc(saleRecord.id).set(saleRecord);
+        return saleRecord;
+    },
+    registerDailyPass: (userId, clientName, price, paymentMethod) => {
+        const saleRecord = {
+            id: `PASEDIARIO-${generateId().substring(0,5).toUpperCase()}`,
+            user_id: userId,
+            items: [{ name: `Pase Diario: ${clientName}`, qty: 1 }],
+            total_cost: 0,
+            total_amount: Number(price),
+            profit: Number(price),
+            payment_method: paymentMethod,
             date: new Date().toISOString()
         };
         db.collection('gym_sales').doc(saleRecord.id).set(saleRecord);
@@ -219,7 +246,9 @@ const ClientsDB = {
             address: client.address,
             phone: client.phone,
             plan_type: client.plan_type,
-            payment_date: client.payment_date || new Date().toISOString()
+            trainer_id: client.trainer_id || "",
+            payment_date: client.payment_date || new Date().toISOString(),
+            extension_days: 0
         };
         db.collection('gym_clients').doc(newClient.id).set(newClient);
         return newClient;

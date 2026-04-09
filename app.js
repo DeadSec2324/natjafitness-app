@@ -20,7 +20,11 @@ function checkAuth() {
     const savedUser = sessionStorage.getItem('currentUser');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
-        showApp();
+        if(DB.UserDB.getAll().find(u => u.id === currentUser.id)){
+             showApp();
+        } else {
+             showLogin();
+        }
     } else {
         showLogin();
     }
@@ -31,19 +35,37 @@ function showLogin() {
     appView.style.display = 'none';
 }
 
+function loginUserOnline(userObj) {
+    const now = new Date().toISOString();
+    const today = new Date().toLocaleDateString();
+    let updates = { is_online: true, last_login: now };
+    
+    const dbUser = DB.UserDB.getAll().find(u => u.id === userObj.id);
+    if(dbUser) {
+         if(!dbUser.first_login_today || new Date(dbUser.first_login_today).toLocaleDateString() !== today) {
+             updates.first_login_today = now;
+         }
+         DB.UserDB.update(dbUser.id, updates);
+    }
+}
+
 function showApp() {
     loginView.style.display = 'none';
     appView.style.display = 'flex';
     document.getElementById('current-user-name').innerText = currentUser.username;
     
+    loginUserOnline(currentUser);
+    
     // Check role, hide users tab if not admin
     if (currentUser.role === 'Staff') {
         document.body.classList.add('role-staff');
         document.getElementById('nav-users').style.display = 'none';
+        document.getElementById('nav-reports').style.display = 'none';
         if(document.getElementById('backup-panel')) document.getElementById('backup-panel').style.display = 'none';
     } else {
         document.body.classList.remove('role-staff');
         document.getElementById('nav-users').style.display = 'flex';
+        document.getElementById('nav-reports').style.display = 'flex';
         if(document.getElementById('backup-panel')) document.getElementById('backup-panel').style.display = 'block';
     }
     
@@ -75,11 +97,18 @@ if (loginForm) {
 
 if(logoutBtn) {
     logoutBtn.addEventListener('click', () => {
+        if(currentUser) DB.UserDB.update(currentUser.id, { is_online: false });
         currentUser = null;
         sessionStorage.removeItem('currentUser');
         showLogin();
     });
 }
+
+window.addEventListener('beforeunload', () => {
+    if(currentUser) {
+        DB.UserDB.update(currentUser.id, { is_online: false });
+    }
+});
 
 // Navigation
 function setupNavigation() {
@@ -123,6 +152,11 @@ function loadView(viewName) {
         case 'inventory': renderInventory(); break;
         case 'sales': renderSales(); break;
         case 'clients': renderClients(); break;
+        case 'reports': 
+            if(currentUser.role === 'Admin') {
+                if(window.renderReports) window.renderReports();
+            }
+            break;
         case 'users': 
             if(currentUser.role === 'Admin') renderUsers(); 
             break;
@@ -154,9 +188,21 @@ function setupModals() {
         btnAddClient.addEventListener('click', () => {
             document.getElementById('client-form').reset();
             document.getElementById('client-id').value = '';
+            populateTrainerSelect();
             document.getElementById('modal-client-form').classList.add('active');
         });
     }
+}
+
+function populateTrainerSelect() {
+    const sel = document.getElementById('client-trainer');
+    if(!sel) return;
+    sel.innerHTML = '<option value="" disabled selected>Asignar Entrenador</option><option value="NONE">Sin Asignar</option>';
+    DB.UserDB.getAll().forEach(u => {
+        if(u.role === 'Entrenador' || u.role === 'Admin') {
+             sel.innerHTML += `<option value="${u.id}">${u.username} (${u.role})</option>`;
+        }
+    });
 }
 
 // Global Functions
@@ -272,7 +318,8 @@ function setupForms() {
                 const pwd = document.getElementById('user-password').value;
                 const usrData = {
                     username: document.getElementById('user-username').value,
-                    role: document.getElementById('user-role').value
+                    role: document.getElementById('user-role').value,
+                    training_price: parseFloat(document.getElementById('user-training-price').value) || 0
                 };
                 if(pwd) usrData.password = pwd;
 
@@ -316,6 +363,7 @@ function setupForms() {
                 address: document.getElementById('client-address').value,
                 phone: document.getElementById('client-phone').value,
                 plan_type: newPlan,
+                trainer_id: document.getElementById('client-trainer').value === 'NONE' ? '' : document.getElementById('client-trainer').value,
                 payment_date: paymentDate
             };
             
@@ -406,8 +454,12 @@ function setupForms() {
             }
             requireAuth((authUser) => {
                 try {
-                    DB.SalesDB.processSale(authUser.id, cart);
-                    if(authUser.role === 'Staff') DB.ActivityDB.log(authUser.username, `Procesó una venta de ${cart.length} productos diferentes`);
+                    const paymentMethod = document.getElementById('sale-payment-method').value || 'Efectivo';
+                    DB.SalesDB.processSale(authUser.id, cart, paymentMethod);
+                    
+                    const itemNames = cart.map(c => `${c.qty} ${c.name}`).join(', ');
+                    DB.ActivityDB.log(authUser.username, `Procesó venta de: ${itemNames} (${paymentMethod})`);
+                    
                     alert("Venta procesada con éxito");
                     cart = [];
                     renderCart();
@@ -433,22 +485,95 @@ function setupForms() {
             window.print();
         });
     }
+    
+    // Extension Form
+    const extForm = document.getElementById('extension-form');
+    if(extForm) {
+        extForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('ext-client-id').value;
+            const days = parseInt(document.getElementById('ext-days').value, 10);
+            if(id && days > 0) {
+                const client = DB.ClientsDB.getById(id);
+                if(client) {
+                    const currentExt = client.extension_days || 0;
+                    DB.ClientsDB.update(id, { extension_days: currentExt + days });
+                    if(currentUser) DB.ActivityDB.log(currentUser.username, `Otorgó ${days} días de prórroga a ${client.name} ${client.surname}`);
+                    alert(`Prórroga de ${days} días asignada con éxito a ${client.name}.`);
+                    closeModal('modal-extension-form');
+                    renderClients();
+                }
+            }
+        });
+    }
+    
+    // Daily Pass Form
+    const dailyPassForm = document.getElementById('daily-pass-form');
+    if(dailyPassForm) {
+        dailyPassForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const clientId = document.getElementById('daily-client-id').value;
+            const clientName = document.getElementById('daily-client-name').innerText;
+            const price = parseFloat(document.getElementById('daily-price').value);
+            const method = document.getElementById('daily-payment-method').value;
+            
+            requireAuth((authUser) => {
+                DB.SalesDB.registerDailyPass(authUser.id, clientName, price, method);
+                if(authUser.role === 'Staff' || authUser.role === 'Admin') DB.ActivityDB.log(authUser.username, `Cobró Acceso Diario de $${price.toFixed(2)} a ${clientName} (${method})`);
+                alert(`Pase procesado con éxito para ${clientName}.`);
+                closeModal('modal-daily-pass');
+                
+                if(document.getElementById('view-dashboard') && document.getElementById('view-dashboard').classList.contains('active')) renderDashboard();
+                if(document.getElementById('view-reports') && document.getElementById('view-reports').classList.contains('active')) window.renderReports();
+            });
+        });
+    }
 }
+
+window.openExtensionModal = function(id, fullName) {
+    document.getElementById('ext-client-id').value = id;
+    document.getElementById('ext-client-name').innerText = fullName;
+    document.getElementById('ext-days').value = '';
+    openModal('modal-extension-form');
+};
+
+window.openDailyPassModal = function(id, fullName, trainerId) {
+    document.getElementById('daily-client-id').value = id;
+    document.getElementById('daily-client-name').innerText = fullName;
+    
+    let targetPrice = 50; 
+    if(trainerId) {
+        const trainer = DB.UserDB.getAll().find(u => u.id === trainerId);
+        if(trainer && trainer.training_price) {
+             targetPrice = trainer.training_price;
+        }
+    }
+    document.getElementById('daily-price').value = targetPrice;
+    openModal('modal-daily-pass');
+};
 
 // Rendering Dashboards & Views
 function renderDashboard() {
     const inv = DB.InventoryDB.getAll();
-    const sales = DB.SalesDB.getAll();
+    const allSales = DB.SalesDB.getAll();
     const txs = DB.TransactionsDB.getAll();
     
     const sumQty = inv.reduce((sum, item) => sum + parseInt(item.quantity), 0);
     document.getElementById('stat-total-items').innerText = sumQty;
     
-    const totalSalesValue = sales.reduce((sum, sale) => sum + parseFloat(sale.total_amount), 0);
-    document.getElementById('stat-total-sales').innerText = `$${totalSalesValue.toFixed(2)}`;
+    const todayStr = new Date().toLocaleDateString();
+    const todaysSales = allSales.filter(s => new Date(s.date).toLocaleDateString() === todayStr);
+
+    const cashSalesValue = todaysSales.filter(s => s.payment_method === 'Efectivo' || !s.payment_method).reduce((sum, sale) => sum + parseFloat(sale.total_amount), 0);
+    const cardSalesValue = todaysSales.filter(s => s.payment_method === 'Tarjeta').reduce((sum, sale) => sum + parseFloat(sale.total_amount), 0);
+    
+    document.getElementById('stat-total-sales').innerText = `$${cashSalesValue.toFixed(2)}`;
+    if(document.getElementById('stat-total-card')) {
+        document.getElementById('stat-total-card').innerText = `$${cardSalesValue.toFixed(2)}`;
+    }
     
     // Calculate total profit
-    const totalProfitValue = sales.reduce((sum, sale) => sum + parseFloat(sale.profit || 0), 0);
+    const totalProfitValue = todaysSales.reduce((sum, sale) => sum + parseFloat(sale.profit || 0), 0);
     if(document.getElementById('stat-total-profit')) {
         document.getElementById('stat-total-profit').innerText = `$${totalProfitValue.toFixed(2)}`;
     }
@@ -474,7 +599,7 @@ function renderDashboard() {
         reportTbody.innerHTML = '';
         
         let productProfits = {};
-        sales.forEach(s => {
+        allSales.forEach(s => {
             s.items.forEach(i => {
                 if(!productProfits[i.id]) productProfits[i.id] = 0;
                 const currentCost = DB.InventoryDB.getById(i.id)?.cost_price || 0;
@@ -611,10 +736,16 @@ function renderUsers() {
     tbody.innerHTML = '';
     
     users.forEach(u => {
+        const statusClass = u.is_online ? 'status-online' : 'status-offline';
+        const firstLog = u.first_login_today ? new Date(u.first_login_today).toLocaleTimeString() : 'N/A';
+        const lastLog = u.last_login ? new Date(u.last_login).toLocaleTimeString() : 'N/A';
+        const priceTag = u.training_price ? `<br><small style="color:var(--accent-color)">Tarifa: $${parseFloat(u.training_price).toFixed(2)}</small>` : '';
+
         tbody.innerHTML += `
             <tr>
-                <td>${u.username}</td>
-                <td>${u.role}</td>
+                <td><span class="status-dot ${statusClass}"></span> <strong>${u.username}</strong></td>
+                <td>${u.role} ${priceTag}</td>
+                <td><small style="color:var(--text-secondary)">1º Entrada Hoy: ${firstLog}<br>Últ. Acción: ${lastLog}</small></td>
                 <td class="action-btns">
                     ${u.username !== 'admin' ? `
                         <button class="btn-icon" style="color: var(--primary-color)" onclick="editUser('${u.id}')" title="Editar"><i class="fas fa-edit"></i></button>
@@ -720,26 +851,65 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+window.checkClientExpiration = function(client) {
+    if (client.plan_type === 'Diario') return { isExpired: false, expiresToday: false };
+    
+    let planDays = 0;
+    if (client.plan_type === 'Mensual' || client.plan_type === 'Personalizado') planDays = 30;
+    else if (client.plan_type === 'Quincenal') planDays = 15;
+    
+    if (planDays === 0) return { isExpired: false, expiresToday: false };
+    
+    const extensions = client.extension_days || 0;
+    const totalDaysAllowed = planDays + extensions;
+    
+    const payDate = new Date(client.payment_date);
+    payDate.setHours(0,0,0,0);
+    const expirationDate = new Date(payDate);
+    expirationDate.setDate(expirationDate.getDate() + totalDaysAllowed);
+    
+    const now = new Date();
+    now.setHours(0,0,0,0);
+    
+    const timeDiff = now - expirationDate;
+    
+    return {
+        isExpired: timeDiff > 0,
+        expiresToday: timeDiff === 0
+    };
+};
+
+let hasAlertedExpirationsToday = false;
+
 function renderClients() {
     const clients = DB.ClientsDB.getAll();
-    const now = new Date();
     
-    let mensual = 0, diario = 0, personal = 0, expired = 0;
+    let mensual = 0, quincenal = 0, diario = 0, personal = 0, expired = 0;
+    let expiringTodayNames = [];
     
     clients.forEach(c => {
         if(c.plan_type === 'Mensual') mensual++;
+        if(c.plan_type === 'Quincenal') quincenal++;
         if(c.plan_type === 'Diario') diario++;
         if(c.plan_type === 'Personalizado') personal++;
         
-        // Verifica si está vencido (solo mensual o personalizado, asumiendo 30 días)
-        if(c.plan_type === 'Mensual' || c.plan_type === 'Personalizado') {
-            const payDate = new Date(c.payment_date);
-            const daysDiff = (now - payDate) / (1000 * 60 * 60 * 24);
-            if(daysDiff >= 30) expired++;
+        const expRules = window.checkClientExpiration(c);
+        if(expRules.isExpired) expired++;
+        if(expRules.expiresToday) {
+            expiringTodayNames.push(`${c.name} ${c.surname}`);
         }
     });
     
+    if (expiringTodayNames.length > 0 && !hasAlertedExpirationsToday && currentUser && currentUser.role === 'Admin') {
+        hasAlertedExpirationsToday = true;
+        setTimeout(() => {
+            alert("¡Atención! Los siguientes clientes vencen el día de HOY:\n\n- " + expiringTodayNames.join("\n- "));
+        }, 500);
+        DB.ActivityDB.log("Sistema", "Vencimiento HOY de: " + expiringTodayNames.join(", "));
+    }
+    
     document.getElementById('stat-cat-mensual').innerText = mensual;
+    if(document.getElementById('stat-cat-quincenal')) document.getElementById('stat-cat-quincenal').innerText = quincenal;
     document.getElementById('stat-cat-diario').innerText = diario;
     document.getElementById('stat-cat-personal').innerText = personal;
     document.getElementById('stat-expired-clients').innerText = expired;
@@ -756,17 +926,10 @@ window.showClientsCategory = function(category) {
     tbody.innerHTML = '';
     title.innerText = `Visualizando: ${category}`;
     
-    const now = new Date();
     let filtered = [];
     
     if (category === 'Vencidos') {
-        filtered = clients.filter(c => {
-            if(c.plan_type === 'Mensual' || c.plan_type === 'Personalizado') {
-                const payDate = new Date(c.payment_date);
-                return (now - payDate) / (1000 * 60 * 60 * 24) >= 30;
-            }
-            return false;
-        });
+        filtered = clients.filter(c => window.checkClientExpiration(c).isExpired);
     } else {
         filtered = clients.filter(c => c.plan_type === category);
     }
@@ -775,23 +938,26 @@ window.showClientsCategory = function(category) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay clientes en esta categoría.</td></tr>';
     } else {
         filtered.forEach(c => {
-            let isExpired = false;
-            if(c.plan_type === 'Mensual' || c.plan_type === 'Personalizado') {
-                const payDate = new Date(c.payment_date);
-                isExpired = (now - payDate) / (1000 * 60 * 60 * 24) >= 30;
-            }
+            const expRules = window.checkClientExpiration(c);
+            const isExpired = expRules.isExpired;
             
             const pdate = new Date(c.payment_date).toLocaleDateString();
+            const extBadge = c.extension_days ? `<span style="font-size:0.75rem; color:var(--text-secondary); margin-left: 5px;">(+${c.extension_days}d prórroga)</span>` : '';
             const expBadge = isExpired ? '<span style="color: white; background: var(--danger-color); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-left: 5px;">Vencido</span>' : '';
             
+            const trainerObj = c.trainer_id ? DB.UserDB.getAll().find(u => u.id === c.trainer_id) : null;
+            const trainerName = trainerObj ? trainerObj.username : 'Sin Asignar';
+
             tbody.innerHTML += `
                 <tr style="${isExpired && category !== 'Vencidos' ? 'background: rgba(239, 68, 68, 0.05);' : ''}">
-                    <td><strong>${c.name} ${c.surname}</strong></td>
+                    <td><strong>${c.name} ${c.surname}</strong>${extBadge}<br><small style="color:var(--accent-color)">Entrenador: ${trainerName}</small></td>
                     <td>${c.age} años / ${c.weight} kg</td>
                     <td>${c.address} <br> <small style="color:var(--text-secondary)"><i class="fas fa-phone"></i> ${c.phone}</small></td>
                     <td>${c.plan_type}</td>
                     <td>${pdate} ${expBadge}</td>
                     <td class="action-btns admin-only">
+                        ${c.plan_type === 'Diario' ? `<button class="btn-icon" style="color: var(--success-color);" onclick="openDailyPassModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}', '${c.trainer_id || ''}')" title="Cobrar Pase Diario"><i class="fas fa-ticket-alt"></i></button>` : ''}
+                        <button class="btn-icon" style="color: #f59e0b;" onclick="openExtensionModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}')" title="Otorgar Prórroga"><i class="fas fa-calendar-plus"></i></button>
                         <button class="btn-icon" onclick="editClient('${c.id}')" title="Editar"><i class="fas fa-edit"></i></button>
                         ${currentUser.role === 'Admin' ? `<button class="btn-icon" style="color: var(--danger-color)" onclick="deleteClient('${c.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
                     </td>
@@ -940,3 +1106,127 @@ if(fileImport) {
         reader.readAsText(file);
     });
 }
+
+// Reports Implementation
+let weeklyChartInstance = null;
+let paymentChartInstance = null;
+let deptChartInstance = null;
+
+window.renderReports = function() {
+    if(typeof Chart === 'undefined') return;
+    
+    const sales = DB.SalesDB.getAll();
+    Chart.defaults.color = '#94a3b8';
+    
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const dayOfWeek = today.getDay();
+    const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const currentMonday = new Date(today);
+    currentMonday.setDate(today.getDate() - daysSinceMonday);
+    
+    let weeklyTotals = [0,0,0,0,0,0,0];
+    let cashTotal = 0;
+    let cardTotal = 0;
+    
+    let deptTotals = {};
+    
+    sales.forEach(s => {
+        const sDate = new Date(s.date);
+        sDate.setHours(0,0,0,0);
+        
+        const dayDiff = Math.floor((sDate - currentMonday) / (1000 * 60 * 60 * 24));
+        if(dayDiff >= 0 && dayDiff < 7) {
+            weeklyTotals[dayDiff] += parseFloat(s.total_amount);
+        }
+        
+        if(s.payment_method === 'Tarjeta') cardTotal += parseFloat(s.total_amount);
+        else cashTotal += parseFloat(s.total_amount);
+        
+        s.items.forEach(i => {
+           let category = 'Gimnasio';
+           if(i.name.toLowerCase().includes('agua') || i.name.toLowerCase().includes('bebida') || i.name.toLowerCase().includes('cava') || i.name.toLowerCase().includes('energetic')) category = 'Bebidas';
+           else if(i.name.includes('Pase Diario')) category = 'Tickets Diarios';
+           else if(i.name.toLowerCase().includes('suplemento') || i.name.toLowerCase().includes('proteina') || i.name.toLowerCase().includes('creatina')) category = 'Suplementos';
+           else category = 'Artículos Varios';
+           
+           if(!deptTotals[category]) deptTotals[category] = 0;
+           deptTotals[category] += i.subtotal || (i.price * i.qty) || 0;
+        });
+    });
+
+    const ctxWeekly = document.getElementById('chart-weekly-sales');
+    if(weeklyChartInstance) weeklyChartInstance.destroy();
+    weeklyChartInstance = new Chart(ctxWeekly, {
+        type: 'bar',
+        data: {
+            labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+            datasets: [{
+                label: 'Ventas de la semana actual ($)',
+                data: weeklyTotals,
+                backgroundColor: 'rgba(10, 132, 255, 0.6)',
+                borderColor: 'rgba(10, 132, 255, 1)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+    });
+
+    const ctxPayment = document.getElementById('chart-payment-methods');
+    if(paymentChartInstance) paymentChartInstance.destroy();
+    paymentChartInstance = new Chart(ctxPayment, {
+        type: 'doughnut',
+        data: {
+            labels: ['Efectivo', 'Tarjeta'],
+            datasets: [{
+                data: [cashTotal, cardTotal],
+                backgroundColor: ['#34c759', '#0a84ff'],
+                borderWidth: 0
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    const ctxDept = document.getElementById('chart-departments');
+    if(deptChartInstance) deptChartInstance.destroy();
+    const deptLabels = Object.keys(deptTotals);
+    const deptData = Object.values(deptTotals);
+    const colors = ['#0a84ff', '#5e5ce6', '#d43bdb', '#ff2d55', '#ff9f0a', '#32ade6'];
+    deptChartInstance = new Chart(ctxDept, {
+        type: 'pie',
+        data: {
+            labels: deptLabels,
+            datasets: [{
+                data: deptData,
+                backgroundColor: colors.slice(0, deptLabels.length),
+                borderWidth: 0
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+    
+    const trBody = document.querySelector('#trainer-performance-table tbody');
+    if(trBody) {
+        trBody.innerHTML = '';
+        const users = DB.UserDB.getAll().filter(u => u.role === 'Entrenador' || u.role === 'Admin');
+        const clients = DB.ClientsDB.getAll();
+        
+        users.forEach(u => {
+            const ownClients = clients.filter(c => c.trainer_id === u.id && !window.checkClientExpiration(c).isExpired);
+            const clientsCount = ownClients.length;
+            const tPrice = u.training_price || 0;
+            const expectedProfit = clientsCount * tPrice;
+            
+            if(clientsCount > 0 || u.role === 'Entrenador') {
+                trBody.innerHTML += `
+                    <tr>
+                        <td><strong>${u.username}</strong></td>
+                        <td>${clientsCount} activos</td>
+                        <td style="color:var(--success-color); font-weight:bold;">$${expectedProfit.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+        });
+    }
+};

@@ -16,6 +16,7 @@
     <!-- Firebase SDK (Compat Version for simplicity in pure HTML/JS) -->
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -64,6 +65,9 @@
                 <a class="nav-item" data-target="users" id="nav-users" style="display: none;">
                     <i class="fas fa-users"></i> Usuarios
                 </a>
+                <a class="nav-item" data-target="reports" id="nav-reports" style="display: none;">
+                    <i class="fas fa-chart-pie"></i> Reportes
+                </a>
                 <a class="nav-item" data-target="messages">
                     <i class="fas fa-comments"></i> Mensajes
                 </a>
@@ -106,17 +110,24 @@
                             </div>
                         </div>
                         <div class="glass-panel stat-card">
-                            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--success-color);"><i class="fas fa-chart-line"></i></div>
+                            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--success-color);"><i class="fas fa-money-bill-wave"></i></div>
                             <div class="stat-info">
                                 <h3 id="stat-total-sales">$0.00</h3>
-                                <span>Ventas Totales</span>
+                                <span>Ventas Efectivo (Hoy)</span>
                             </div>
                         </div>
                         <div class="glass-panel stat-card admin-only">
-                            <div class="stat-icon" style="background: rgba(59, 130, 246, 0.2); color: var(--primary-color);"><i class="fas fa-piggy-bank"></i></div>
+                            <div class="stat-icon" style="background: rgba(59, 130, 246, 0.2); color: var(--primary-color);"><i class="fas fa-credit-card"></i></div>
+                            <div class="stat-info">
+                                <h3 id="stat-total-card">$0.00</h3>
+                                <span>Ventas Tarjeta (Hoy)</span>
+                            </div>
+                        </div>
+                        <div class="glass-panel stat-card admin-only">
+                            <div class="stat-icon" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;"><i class="fas fa-piggy-bank"></i></div>
                             <div class="stat-info">
                                 <h3 id="stat-total-profit">$0.00</h3>
-                                <span>Ganancias Totales</span>
+                                <span>Ganancias (Hoy)</span>
                             </div>
                         </div>
                     </div>
@@ -168,6 +179,45 @@
                                     <!-- Populated by JS -->
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Reports View -->
+                <section id="view-reports" class="view-section">
+                    <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                        <h3>Resumen de Ventas de la Semana Actual</h3>
+                        <div style="height: 300px; width: 100%;">
+                            <canvas id="chart-weekly-sales"></canvas>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <div class="glass-panel" style="padding: 1.5rem;">
+                            <h3>Ventas por Forma de Pago</h3>
+                            <div style="height: 250px; width: 100%;">
+                                <canvas id="chart-payment-methods"></canvas>
+                            </div>
+                        </div>
+                        <div class="glass-panel" style="padding: 1.5rem;">
+                            <h3>Ganancias por Departamento / Artículo</h3>
+                            <div style="height: 250px; width: 100%;">
+                                <canvas id="chart-departments"></canvas>
+                            </div>
+                        </div>
+                        <div class="glass-panel" style="padding: 1.5rem;">
+                            <h3>Plan de Rendimiento (Entrenadores)</h3>
+                            <div class="table-container">
+                                <table id="trainer-performance-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Entrenador</th>
+                                            <th>Clientes Activos</th>
+                                            <th>Ganancia Mínima Esperada</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -243,6 +293,13 @@
                                     <span id="cart-total">$0.00</span>
                                 </div>
                             </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label for="sale-payment-method" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Método de Pago:</label>
+                                <select id="sale-payment-method" style="width: 100%;" required>
+                                    <option value="Efectivo" selected>Caja / Efectivo</option>
+                                    <option value="Tarjeta">Pago con Tarjeta</option>
+                                </select>
+                            </div>
                             <button id="btn-process-sale" class="btn-success" style="width: 100%; margin-bottom: 1rem;"><i class="fas fa-check-circle"></i> Procesar Venta</button>
                             <button id="btn-print-invoice" class="btn-primary" style="width: 100%; background: var(--card-bg); border: 1px solid var(--border-color);" disabled><i class="fas fa-print"></i> Imprimir Factura</button>
                         </div>
@@ -282,6 +339,13 @@
                                 <div class="stat-info">
                                     <h3 id="stat-cat-mensual">0</h3>
                                     <span>Mensual</span>
+                                </div>
+                            </div>
+                            <div class="glass-panel stat-card client-cat-card" onclick="showClientsCategory('Quincenal')" style="cursor: pointer;">
+                                <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--success-color);"><i class="fas fa-calendar-week"></i></div>
+                                <div class="stat-info">
+                                    <h3 id="stat-cat-quincenal">0</h3>
+                                    <span>Quincenal</span>
                                 </div>
                             </div>
                             <div class="glass-panel stat-card client-cat-card" onclick="showClientsCategory('Diario')" style="cursor: pointer;">
@@ -346,8 +410,9 @@
                             <table id="users-table">
                                 <thead>
                                     <tr>
-                                        <th>Usuario</th>
-                                        <th>Rol</th>
+                                        <th>Estado / Usuario</th>
+                                        <th>Rol & Tarifa</th>
+                                        <th>Registro de Accesos</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
@@ -430,8 +495,12 @@
                 <select id="client-plan" style="margin-top:1rem;" required>
                     <option value="" disabled selected>Seleccione el tipo de plan...</option>
                     <option value="Mensual">Membresía Mensual</option>
+                    <option value="Quincenal">Membresía Quincenal</option>
                     <option value="Diario">Membresía Básica Pago Diario</option>
                     <option value="Personalizado">Entrenamiento Personalizado</option>
+                </select>
+                <select id="client-trainer" style="margin-top:1rem;" required>
+                    <!-- Populated by JS -->
                 </select>
                 <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                     <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-client-form')">Cancelar</button>
@@ -455,7 +524,9 @@
                 <select id="user-role" required>
                     <option value="Staff">Staff (Solo ventas y ver inventario)</option>
                     <option value="Admin">Administrador (Acceso total)</option>
+                    <option value="Entrenador">Entrenador (Acceso clientes)</option>
                 </select>
+                <input type="number" id="user-training-price" placeholder="Tarifa Entrenador Mensual ($) - Opcional" step="0.01" style="margin-top:1rem;">
                 <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                     <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-user-form')">Cancelar</button>
                     <button type="submit" class="btn-success" style="flex:1;">Guardar</button>
@@ -517,6 +588,48 @@
                 </select>
                 <input type="password" id="auth-confirm-pass" placeholder="Contraseña" required style="margin-bottom: 1rem;">
                 <button type="submit" class="btn-primary" style="width: 100%;">Confirmar y Procesar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Extension Modal -->
+    <div class="modal-overlay" id="modal-extension-form">
+        <div class="glass-panel modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header">
+                <h3>Otorgar Prórroga</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-extension-form')"></i>
+            </div>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">Otorgue de 1 a 15 días extra para el cliente <strong id="ext-client-name"></strong>.</p>
+            <form id="extension-form">
+                <input type="hidden" id="ext-client-id">
+                <input type="number" id="ext-days" placeholder="Días (1-15)" min="1" max="15" required style="margin-bottom: 1rem; width: 100%;">
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-extension-form')">Cancelar</button>
+                    <button type="submit" class="btn-success" style="flex:1;">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Daily Access Modal -->
+    <div class="modal-overlay" id="modal-daily-pass">
+        <div class="glass-panel modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header">
+                <h3>Cobrar Acceso Diario</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-daily-pass')"></i>
+            </div>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">Dar acceso a <strong id="daily-client-name"></strong>.</p>
+            <form id="daily-pass-form">
+                <input type="hidden" id="daily-client-id">
+                <input type="number" id="daily-price" placeholder="Precio del Pase ($)" min="0" step="0.01" required style="margin-bottom: 1rem; width: 100%;">
+                <select id="daily-payment-method" required style="margin-bottom: 1rem;">
+                    <option value="Efectivo" selected>Efectivo</option>
+                    <option value="Tarjeta">Tarjeta</option>
+                </select>
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-daily-pass')">Cancelar</button>
+                    <button type="submit" class="btn-success" style="flex:1;">Procesar Pase</button>
+                </div>
             </form>
         </div>
     </div>
