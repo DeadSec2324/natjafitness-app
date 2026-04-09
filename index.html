@@ -53,6 +53,9 @@
                 <a class="nav-item active" data-target="dashboard">
                     <i class="fas fa-home"></i> Inicio
                 </a>
+                <a class="nav-item" data-target="daily-pass">
+                    <i class="fas fa-ticket-alt"></i> Pase Diario
+                </a>
                 <a class="nav-item" data-target="inventory">
                     <i class="fas fa-boxes"></i> Inventario
                 </a>
@@ -449,6 +452,49 @@
                                 <!-- Populated dynamically -->
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                <!-- Daily Pass View -->
+                <section id="view-daily-pass" class="view-section">
+                    <div class="glass-panel" style="padding: 1.5rem; max-width: 500px; margin: 0 auto; margin-top: 2rem;">
+                        <h3 style="margin-bottom: 1.5rem; text-align: center;"><i class="fas fa-ticket-alt"></i> Módulo de Pase Diario</h3>
+                        
+                        <div class="admin-only" style="background: rgba(0,0,0,0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                            <label style="font-weight: bold; color: var(--text-secondary); font-size: 0.9rem;">Configuración de Admin: Precio Base</label>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <input type="number" id="config-daily-price-view" step="0.01" style="width: 100px; margin: 0; padding: 0.3rem;">
+                                <button class="btn-primary" onclick="window.saveGymConfigView()" style="padding: 0.3rem 1rem;">Guardar Default</button>
+                            </div>
+                        </div>
+
+                        <form id="view-daily-pass-form">
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display:block; margin-bottom: 0.2rem; font-weight:bold; font-size: 0.9rem;">1. Cliente Existente (Opcional):</label>
+                                <select id="v-daily-existing-client" style="width: 100%;" onchange="document.getElementById('v-daily-name').value = '';">
+                                    <option value="">-- Ignorar o registrar nuevo abajo --</option>
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+                            
+                            <div style="margin-bottom: 1.5rem;">
+                                <label style="display:block; margin-bottom: 0.2rem; font-weight:bold; font-size: 0.9rem;">2. O Ingrese Nuevo Nombre:</label>
+                                <input type="text" id="v-daily-name" placeholder="Ej. Juan Pérez" style="width: 100%;" oninput="document.getElementById('v-daily-existing-client').value = '';">
+                            </div>
+                            
+                            <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                                <label style="display:block; text-align:center; font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.2rem;">Precio a Cobrar ($):</label>
+                                <input type="number" id="v-daily-price" placeholder="Precio ($)" min="0" step="0.01" required style="margin-bottom: 0; width: 100%; font-weight: bold; font-size: 1.5rem; text-align: center; color: var(--success-color);">
+                            </div>
+                            
+                            <label style="display:block; margin-bottom: 0.5rem; font-weight:bold; font-size: 0.9rem;">3. Método de Pago:</label>
+                            <select id="v-daily-payment-method" required style="margin-bottom: 1.5rem; width: 100%;">
+                                <option value="Efectivo" selected>Pago en Efectivo</option>
+                                <option value="Tarjeta">Pago con Tarjeta</option>
+                            </select>
+                            
+                            <button type="submit" class="btn-success" style="width: 100%; font-weight:bold; padding: 1rem; font-size: 1.1rem;"><i class="fas fa-check-circle"></i> Procesar y Cobrar</button>
+                        </form>
                     </div>
                 </section>
 

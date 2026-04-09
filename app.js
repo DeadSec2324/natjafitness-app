@@ -144,7 +144,10 @@ function loadView(viewName) {
         titleObj.innerText = viewName === 'dashboard' ? 'Panel de Inicio' :
             viewName === 'inventory' ? 'Inventario' :
             viewName === 'sales' ? 'Punto de Venta' : 
-            viewName === 'clients' ? 'Clientes' : 'Usuarios';
+            viewName === 'clients' ? 'Clientes' : 
+            viewName === 'daily-pass' ? 'Pase Diario Express' :
+            viewName === 'messages' ? 'Mensajes' :
+            'Usuarios';
     }
         
     switch(viewName) {
@@ -152,6 +155,7 @@ function loadView(viewName) {
         case 'inventory': renderInventory(); break;
         case 'sales': renderSales(); break;
         case 'clients': renderClients(); break;
+        case 'daily-pass': if(window.renderDailyPassView) window.renderDailyPassView(); break;
         case 'reports': 
             if(currentUser.role === 'Admin') {
                 if(window.renderReports) window.renderReports();
@@ -849,22 +853,19 @@ window.checkDirectMessages = function(snap) {
     });
 };
 
-window.renderMessages = function() {
-    const allMsgs = DB.MessagesDB.getAll().sort((a,b) => new Date(a.date) - new Date(b.date));
-    const box = document.getElementById('chat-box');
-    if(!box || !currentUser) return;
-    
+window.updateOnlineUsersPanel = function() {
     const onlineList = document.getElementById('online-users-list');
     const recipientSelect = document.getElementById('message-recipient');
-    if(onlineList && recipientSelect) {
+    if(onlineList && recipientSelect && currentUser) {
         onlineList.innerHTML = '';
         
         const currentSelected = recipientSelect.value;
-        const recipientOptions = ['<option value="ALL">Para: Todos</option>'];
+        const recipientOptions = ['<option value="ALL">🌐 Para: Todos</option>'];
         
         DB.UserDB.getAll().forEach(u => {
             if(u.username !== currentUser.username) {
-               recipientOptions.push(`<option value="${u.username}">Para: ${u.username}</option>`);
+               const statusEmoji = u.is_online ? '🟢' : '🔴';
+               recipientOptions.push(`<option value="${u.username}">${statusEmoji} Para: ${u.username}</option>`);
             }
             
             const statusClass = u.is_online ? 'status-online' : 'status-offline';
@@ -883,6 +884,14 @@ window.renderMessages = function() {
         
         recipientSelect.style.display = 'block';
     }
+};
+
+window.renderMessages = function() {
+    const allMsgs = DB.MessagesDB.getAll().sort((a,b) => new Date(a.date) - new Date(b.date));
+    const box = document.getElementById('chat-box');
+    if(!box || !currentUser) return;
+    
+    window.updateOnlineUsersPanel();
     
     box.innerHTML = '';
     allMsgs.forEach(m => {
@@ -1312,4 +1321,93 @@ window.renderReports = function() {
             }
         });
     }
+    
 };
+
+window.renderDailyPassView = function() {
+    const adminUser = DB.UserDB.getAll().find(u => u.username === 'admin');
+    const price = adminUser && adminUser.daily_pass_price ? parseFloat(adminUser.daily_pass_price) : 5.00;
+    
+    if(document.getElementById('config-daily-price-view')) {
+        document.getElementById('config-daily-price-view').value = price;
+    }
+    
+    document.getElementById('v-daily-name').value = '';
+    const priceInput = document.getElementById('v-daily-price');
+    priceInput.value = price;
+    
+    if(currentUser && currentUser.role === 'Admin') {
+        priceInput.readOnly = false;
+    } else {
+        priceInput.readOnly = true;
+    }
+    
+    const clientSelect = document.getElementById('v-daily-existing-client');
+    if(clientSelect) {
+        clientSelect.innerHTML = '<option value="">-- Ignorar o registrar nuevo abajo --</option>';
+        DB.ClientsDB.getAll().forEach(c => {
+            clientSelect.innerHTML += `<option value="${c.name} ${c.surname}">${c.name} ${c.surname}</option>`;
+        });
+    }
+};
+
+window.saveGymConfigView = function() {
+    const val = document.getElementById('config-daily-price-view').value;
+    const adminUser = DB.UserDB.getAll().find(u => u.username === 'admin');
+    if(adminUser && val !== '') {
+        adminUser.daily_pass_price = parseFloat(val);
+        db.collection('gym_users').doc(adminUser.id).update({ daily_pass_price: adminUser.daily_pass_price });
+        alert('Precio base del Pase Diario guardado.');
+        window.renderDailyPassView();
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const vDailyForm = document.getElementById('view-daily-pass-form');
+    if(vDailyForm) {
+        vDailyForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const existingClient = document.getElementById('v-daily-existing-client').value;
+            const newName = document.getElementById('v-daily-name').value.trim();
+            const finalName = existingClient ? existingClient : newName;
+            
+            const price = parseFloat(document.getElementById('v-daily-price').value);
+            const method = document.getElementById('v-daily-payment-method').value;
+            
+            if(!existingClient && newName) {
+                // Registrar al cliente si se escribió nombre nuevo.
+                const newClient = {
+                    id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                    name: newName,
+                    surname: '',
+                    age: 0,
+                    weight: 0,
+                    address: '',
+                    phone: '',
+                    plan_type: 'Pase de 1 Día',
+                    payment_date: new Date().toISOString(),
+                    extension_days: 0,
+                    trainer_id: ''
+                };
+                db.collection('gym_clients').doc(newClient.id).set(newClient);
+            }
+            
+            const saleObj = {
+                id: `PASEDIARIOEXP-${Date.now().toString(36).toUpperCase()}`,
+                items: [{ id: 'PASE_DIARIO_GLOBAL', name: 'Pase Diario Express', price: price, qty: 1 }],
+                total_amount: price,
+                total_cost: 0,
+                paymentMethod: method,
+                date: new Date().toISOString(),
+                user: currentUser ? currentUser.username : 'Sistema'
+            };
+            db.collection('gym_sales').doc(saleObj.id).set(saleObj);
+            
+            DB.ActivityDB.log(currentUser ? currentUser.username : 'Sistema', `Cobro P.Diario Express a ${finalName || 'Desconocido'}: $${price.toFixed(2)} (${method})`);
+            
+            alert('Pase Diario cobrado exitosamente a ' + (finalName || 'Desconocido'));
+            document.getElementById('v-daily-name').value = '';
+            document.getElementById('v-daily-existing-client').value = '';
+        });
+    }
+});
