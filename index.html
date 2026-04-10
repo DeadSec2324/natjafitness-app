@@ -71,6 +71,9 @@
                 <a class="nav-item" data-target="reports" id="nav-reports" style="display: none;">
                     <i class="fas fa-chart-pie"></i> Reportes
                 </a>
+                <a class="nav-item admin-only" data-target="receivables" id="nav-receivables" style="display: none;">
+                    <i class="fas fa-hand-holding-usd"></i> Cuentas por Cobrar
+                </a>
                 <a class="nav-item" data-target="messages">
                     <i class="fas fa-comments"></i> Mensajes
                 </a>
@@ -132,6 +135,23 @@
                                 <h3 id="stat-total-profit">$0.00</h3>
                                 <span>Ganancias (Hoy)</span>
                             </div>
+                        </div>
+                        <div class="glass-panel stat-card admin-only">
+                            <div class="stat-icon" style="background: rgba(239, 68, 68, 0.2); color: var(--danger-color);"><i class="fas fa-hand-holding-usd"></i></div>
+                            <div class="stat-info">
+                                <h3><span id="stat-receivables-today">$0.00</span> / <small id="stat-receivables-total" style="font-size: 0.8rem; opacity: 0.8;">$0.00</small></h3>
+                                <span>Por Cobrar (Hoy/Hist)</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Auth OTP (Admin only) -->
+                    <div class="glass-panel admin-only" id="otp-panel" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                        <h3>Autorización de Créditos (OTP)</h3>
+                        <p style="margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Genera un código de un solo uso para que el equipo pueda ingresar una venta a crédito.</p>
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <button id="btn-generate-otp" class="btn-primary">Generar Código Nuevo</button>
+                            <div style="font-size: 1.5rem; font-weight: bold; letter-spacing: 5px; color: var(--accent-color);" id="current-otp-display">-----</div>
                         </div>
                     </div>
                     
@@ -301,6 +321,7 @@
                                 <select id="sale-payment-method" style="width: 100%;" required>
                                     <option value="Efectivo" selected>Caja / Efectivo</option>
                                     <option value="Tarjeta">Pago con Tarjeta</option>
+                                    <option value="Crédito">Cuentas por cobrar (Crédito)</option>
                                 </select>
                             </div>
                             <button id="btn-process-sale" class="btn-success" style="width: 100%; margin-bottom: 1rem;"><i class="fas fa-check-circle"></i> Procesar Venta</button>
@@ -402,6 +423,32 @@
                     </div>
                 </section>
 
+                <!-- Receivables View -->
+                <section id="view-receivables" class="view-section admin-only">
+                    <div class="glass-panel" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h3>Cuentas por Cobrar</h3>
+                        </div>
+                        <div class="table-container">
+                            <table id="receivables-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha / Transacción</th>
+                                        <th>Cliente</th>
+                                        <th>Detalles de Deuda</th>
+                                        <th>Fecha a Cobrar</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Users View -->
                 <section id="view-users" class="view-section">
                     <div class="glass-panel" style="padding: 1.5rem;">
@@ -491,6 +538,7 @@
                             <select id="v-daily-payment-method" required style="margin-bottom: 1.5rem; width: 100%;">
                                 <option value="Efectivo" selected>Pago en Efectivo</option>
                                 <option value="Tarjeta">Pago con Tarjeta</option>
+                                <option value="Crédito">Cuentas por cobrar (Crédito)</option>
                             </select>
                             
                             <button type="submit" class="btn-success" style="width: 100%; font-weight:bold; padding: 1rem; font-size: 1.1rem;"><i class="fas fa-check-circle"></i> Procesar y Cobrar</button>
@@ -628,6 +676,72 @@
                 <!-- Notifications go here -->
             </div>
             <button class="btn-primary" onclick="DB.ActivityDB.markAllRead(); closeModal('modal-notifications')" style="margin-top: 1rem; width: 100%;">Marcar todas como leídas</button>
+        </div>
+    </div>
+
+    <!-- OTP Staff Modal -->
+    <div class="modal-overlay" id="modal-otp-staff" style="z-index: 10001;">
+        <div class="glass-panel modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header">
+                <h3><i class="fas fa-key"></i> Autorización Requerida</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-otp-staff')"></i>
+            </div>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">Esta transacción a crédito requiere aprobación. Ingresa el código proporcionado por un Administrador.</p>
+            <form id="otp-staff-form">
+                <input type="text" id="otp-input" placeholder="Código numérico" required style="margin-bottom: 1rem; text-align: center; font-size: 1.5rem; letter-spacing: 5px;">
+                <button type="submit" class="btn-primary" style="width: 100%;">Verificar y Continuar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Credit Details Modal -->
+    <div class="modal-overlay" id="modal-credit-info" style="z-index: 10000;">
+        <div class="glass-panel modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-hand-holding-usd"></i> Detalles del Crédito</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-credit-info')"></i>
+            </div>
+            <form id="credit-info-form">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display:block; margin-bottom: 0.2rem; font-weight:bold;">1. Selecciona un Cliente Existente:</label>
+                    <select id="credit-existing-client" style="width: 100%;" onchange="document.getElementById('credit-new-client').value = '';">
+                        <option value="">-- Ignorar o registrar nuevo --</option>
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display:block; margin-bottom: 0.2rem; font-weight:bold;">2. O Escribe el Nombre (Cliente Nuevo):</label>
+                    <input type="text" id="credit-new-client" placeholder="Nombre completo" style="width: 100%;" oninput="document.getElementById('credit-existing-client').value = '';">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display:block; margin-bottom: 0.2rem; font-weight:bold;">3. Fecha Acordada de Cobro:</label>
+                    <input type="date" id="credit-date" required style="width: 100%;">
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%;">Confirmar Crédito</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Process Receivable Modal -->
+    <div class="modal-overlay" id="modal-process-receivable">
+        <div class="glass-panel modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header">
+                <h3>Procesar Pago de Crédito</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-process-receivable')"></i>
+            </div>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">Confirmar pago de la cuenta de <strong id="rec-client-name"></strong> por <strong id="rec-amount"></strong>.</p>
+            <form id="process-receivable-form">
+                <input type="hidden" id="rec-id">
+                <select id="rec-status" required style="margin-bottom: 1rem; width: 100%;">
+                    <option value="" disabled selected>Estado del Pago...</option>
+                    <option value="Pagado a tiempo">Pagó a Tiempo</option>
+                    <option value="Pagado con atraso">Pagó con Atraso</option>
+                </select>
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-process-receivable')">Cancelar</button>
+                    <button type="submit" class="btn-success" style="flex:1;">Procesar Pago</button>
+                </div>
+            </form>
         </div>
     </div>
 

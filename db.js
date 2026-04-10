@@ -22,7 +22,8 @@ let localData = {
     gym_sales: [],
     gym_clients: [],
     gym_activity: [],
-    gym_messages: []
+    gym_messages: [],
+    gym_receivables: []
 };
 
 // Listeners for realtime update
@@ -43,6 +44,9 @@ db.collection('gym_users').onSnapshot(snap => {
     }
     if(window.renderUsers && document.getElementById('view-users') && document.getElementById('view-users').classList.contains('active')) {
         window.renderUsers();
+    }
+    if(window.updateOnlineUsersPanel && document.getElementById('view-messages') && document.getElementById('view-messages').classList.contains('active')) {
+        window.updateOnlineUsersPanel();
     }
 });
 
@@ -95,6 +99,16 @@ db.collection('gym_messages').onSnapshot(snap => {
     localData.gym_messages = snap.docs.map(doc => doc.data());
     if(window.checkDirectMessages) window.checkDirectMessages(snap);
     if(window.renderMessages && document.getElementById('view-messages') && document.getElementById('view-messages').classList.contains('active')) window.renderMessages();
+});
+
+db.collection('gym_receivables').onSnapshot(snap => {
+    localData.gym_receivables = snap.docs.map(doc => doc.data());
+    if(window.renderReceivables && document.getElementById('view-receivables') && document.getElementById('view-receivables').classList.contains('active')) {
+        window.renderReceivables();
+    }
+    if(window.renderDashboard && document.getElementById('view-dashboard') && document.getElementById('view-dashboard').classList.contains('active')) {
+        window.renderDashboard();
+    }
 });
 
 // Helpers
@@ -233,6 +247,30 @@ const TransactionsDB = {
     getAll: () => localData.gym_transactions
 };
 
+const ReceivablesDB = {
+    getAll: () => localData.gym_receivables,
+    add: (data) => {
+        const item = {
+            id: `COB-${generateId().substring(0,6).toUpperCase()}`,
+            client_id: data.client_id,
+            client_name: data.client_name,
+            items_desc: data.items_desc,
+            total_amount: data.total_amount,
+            total_cost: data.total_cost || 0,
+            transaction_date: new Date().toISOString(),
+            payment_date: data.payment_date,
+            status: 'Pendiente', // 'Pendiente', 'Pagado a tiempo', 'Pagado con atraso'
+            user_id: data.user_id,
+            admin_resolved_date: null
+        };
+        db.collection('gym_receivables').doc(item.id).set(item);
+        return item;
+    },
+    update: (id, updates) => {
+        db.collection('gym_receivables').doc(id).update(updates);
+    }
+};
+
 // Clients Methods
 const ClientsDB = {
     getAll: () => localData.gym_clients,
@@ -306,6 +344,7 @@ window.DB = {
     InventoryDB,
     SalesDB,
     TransactionsDB,
+    ReceivablesDB,
     ClientsDB,
     ActivityDB,
     MessagesDB

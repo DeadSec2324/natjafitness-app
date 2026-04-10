@@ -61,11 +61,13 @@ function showApp() {
         document.body.classList.add('role-staff');
         document.getElementById('nav-users').style.display = 'none';
         document.getElementById('nav-reports').style.display = 'none';
+        document.getElementById('nav-receivables').style.display = 'none';
         if(document.getElementById('backup-panel')) document.getElementById('backup-panel').style.display = 'none';
     } else {
         document.body.classList.remove('role-staff');
         document.getElementById('nav-users').style.display = 'flex';
         document.getElementById('nav-reports').style.display = 'flex';
+        document.getElementById('nav-receivables').style.display = 'flex';
         if(document.getElementById('backup-panel')) document.getElementById('backup-panel').style.display = 'block';
     }
     
@@ -147,6 +149,7 @@ function loadView(viewName) {
             viewName === 'clients' ? 'Clientes' : 
             viewName === 'daily-pass' ? 'Pase Diario Express' :
             viewName === 'messages' ? 'Mensajes' :
+            viewName === 'receivables' ? 'Cuentas por Cobrar' :
             'Usuarios';
     }
         
@@ -163,6 +166,11 @@ function loadView(viewName) {
             break;
         case 'users': 
             if(currentUser.role === 'Admin') renderUsers(); 
+            break;
+        case 'receivables':
+            if(currentUser.role === 'Admin') {
+                if(window.renderReceivables) window.renderReceivables();
+            }
             break;
     }
 }
@@ -454,10 +462,27 @@ function setupForms() {
                 alert("El carrito está vacío");
                 return;
             }
+            
+            const paymentMethod = document.getElementById('sale-payment-method').value || 'Efectivo';
+            if (paymentMethod === 'Crédito') {
+                window.pendingCreditData = {
+                    isDailyPass: false,
+                    cartClone: [...cart],
+                    total_amount: cart.reduce((sum, c) => sum + c.subtotal, 0),
+                    total_cost: cart.reduce((sum, c) => {
+                        const item = DB.InventoryDB.getById(c.id);
+                        return sum + ((item?.cost_price || 0) * c.qty);
+                    }, 0),
+                    desc: cart.map(c => `${c.qty}x ${c.name}`).join(' + ')
+                };
+                window.startCreditApproveFlow();
+                return;
+            }
+
             requireAuth((authUser) => {
                 try {
-                    const paymentMethod = document.getElementById('sale-payment-method').value || 'Efectivo';
-                    DB.SalesDB.processSale(authUser.id, cart, paymentMethod);
+                    const passMethodForNormal = document.getElementById('sale-payment-method').value || 'Efectivo';
+                    DB.SalesDB.processSale(authUser.id, cart, passMethodForNormal);
                     
                     const itemNames = cart.map(c => `${c.qty} ${c.name}`).join(', ');
                     DB.ActivityDB.log(authUser.username, `Procesó venta de: ${itemNames} (${paymentMethod})`);
@@ -530,7 +555,204 @@ function setupForms() {
             });
         });
     }
-}
+    // Créditos Events
+    document.getElementById('btn-generate-otp')?.addEventListener('click', () => {
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+        const adminUser = DB.UserDB.getAll().find(u => u.username === 'admin');
+        if(adminUser) {
+            DB.UserDB.update(adminUser.id, { active_otp: code });
+            document.getElementById('current-otp-display').innerText = code;
+            alert("Código OTP generado con éxito. Válido para 1 uso.");
+        }
+    });
+
+    const otpForm = document.getElementById('otp-staff-form');
+    if (otpForm) {
+        otpForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const input = document.getElementById('otp-input').value;
+            const adminUser = DB.UserDB.getAll().find(u => u.username === 'admin');
+            if (adminUser && adminUser.active_otp && adminUser.active_otp === input) {
+                // Consume
+                DB.UserDB.update(adminUser.id, { active_otp: '' });
+                if(document.getElementById('current-otp-display')) document.getElementById('current-otp-display').innerText = '-----';
+                closeModal('modal-otp-staff');
+                document.getElementById('otp-input').value = '';
+                window.openCreditInfoModal();
+            } else {
+                alert('Código incorrecto o ya utilizado.');
+            }
+        });
+    }
+
+    const creditInfoForm = document.getElementById('credit-info-form');
+    if (creditInfoForm) {
+        creditInfoForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            let clientId = document.getElementById('credit-existing-client').value;
+            let clientName = '';
+            const newClientName = document.getElementById('credit-new-client').value.trim();
+            const payDate = document.getElementById('credit-date').value;
+            
+            if (clientId) {
+                const client = DB.ClientsDB.getById(clientId);
+                if(client) clientName = `${client.name} ${client.surname}`;
+            } else if (newClientName) {
+                clientName = newClientName;
+                const newClient = DB.ClientsDB.add({
+                    name: newClientName, surname: '', age: 0, weight: 0, address: '', phone: '',
+                    plan_type: 'Personalizado', trainer_id: '', payment_date: new Date().toISOString()
+                });
+                clientId = newClient.id;
+            } else {
+                alert("Selecciona un cliente o escribe su nombre.");
+                return;
+            }
+            
+            const pd = window.pendingCreditData;
+            try {
+                if (!pd.isDailyPass) {
+                    pd.cartClone.forEach(c => {
+                        const item = DB.InventoryDB.getById(c.id);
+                        DB.InventoryDB.adjustStock(item.id, -c.qty, currentUser.id, 'SALE');
+                    });
+                    cart = [];
+                    renderCart();
+                    document.getElementById('btn-print-invoice').disabled = true;
+                    populateSalesSelect();
+                }
+                
+                DB.ReceivablesDB.add({
+                    client_id: clientId, client_name: clientName, items_desc: pd.desc,
+                    total_amount: pd.total_amount, total_cost: pd.total_cost, payment_date: payDate,
+                    user_id: currentUser ? currentUser.username : 'Sistema'
+                });
+                
+                DB.ActivityDB.log(currentUser ? currentUser.username : 'Sistema', `Aprobó Venta a Crédito por $${parseFloat(pd.total_amount).toFixed(2)} a ${clientName}`);
+                alert('Crédito otorgado exitosamente.');
+                closeModal('modal-credit-info');
+                
+                if(document.getElementById('view-daily-pass') && document.getElementById('view-daily-pass').classList.contains('active')) {
+                    document.getElementById('v-daily-name').value = '';
+                    document.getElementById('v-daily-existing-client').value = '';
+                }
+                
+                window.pendingCreditData = null;
+                if (currentUser && currentUser.role === 'Admin') renderDashboard();
+            } catch (err) {
+                alert("Error al procesar el crédito: " + err.message);
+            }
+        });
+    }
+
+    const processReceivableForm = document.getElementById('process-receivable-form');
+    if (processReceivableForm) {
+        processReceivableForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('rec-id').value;
+            const status = document.getElementById('rec-status').value;
+            if (id && status) {
+                const r = DB.ReceivablesDB.getAll().find(x => x.id === id);
+                DB.ReceivablesDB.update(id, { status: status, admin_resolved_date: new Date().toISOString() });
+                
+                const saleRecord = {
+                     id: `PAGO-CREDITO-${Date.now().toString(36).substring(0,5).toUpperCase()}`,
+                     user_id: currentUser ? currentUser.username : 'Admin',
+                     items: [{ name: `Cancelación Deuda: ${r.client_name}`, qty: 1 }],
+                     total_cost: 0,
+                     total_amount: r.total_amount,
+                     profit: r.total_amount,
+                     payment_method: status,
+                     date: new Date().toISOString()
+                };
+                db.collection('gym_sales').doc(saleRecord.id).set(saleRecord);
+                DB.ActivityDB.log(currentUser.username, `Cobró Cuenta de $${parseFloat(r.total_amount).toFixed(2)} a ${r.client_name} (${status})`);
+                
+                closeModal('modal-process-receivable');
+                if(window.renderReceivables) window.renderReceivables();
+                renderDashboard();
+                alert("Cobro procesado e ingresado a las transacciones del día.");
+            }
+        });
+    }
+
+} // End of setupForms
+
+window.startCreditApproveFlow = function() {
+    if (currentUser && currentUser.role === 'Staff') {
+        document.getElementById('otp-staff-form').reset();
+        openModal('modal-otp-staff');
+    } else {
+        window.openCreditInfoModal();
+    }
+};
+
+window.openCreditInfoModal = function() {
+    const sel = document.getElementById('credit-existing-client');
+    if(sel) {
+        sel.innerHTML = '<option value="">-- Ignorar o registrar nuevo --</option>';
+        DB.ClientsDB.getAll().forEach(c => {
+            sel.innerHTML += `<option value="${c.id}">${c.name} ${c.surname}</option>`;
+        });
+    }
+    document.getElementById('credit-info-form')?.reset();
+    if(window.pendingCreditData.isDailyPass && window.pendingCreditData.pendingClientName) {
+        document.getElementById('credit-new-client').value = window.pendingCreditData.pendingClientName;
+    }
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    document.getElementById('credit-date').value = d.toISOString().split('T')[0];
+    openModal('modal-credit-info');
+};
+
+window.prepareProcessReceivable = function(id) {
+    const r = DB.ReceivablesDB.getAll().find(x => x.id === id);
+    if(r) {
+        document.getElementById('rec-id').value = r.id;
+        document.getElementById('rec-client-name').innerText = r.client_name;
+        document.getElementById('rec-amount').innerText = '$' + parseFloat(r.total_amount).toFixed(2);
+        document.getElementById('rec-status').value = '';
+        openModal('modal-process-receivable');
+    }
+};
+
+window.renderReceivables = function() {
+    const tbody = document.querySelector('#receivables-table tbody');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    
+    if (!DB.ReceivablesDB) return;
+    
+    const recs = DB.ReceivablesDB.getAll().sort((a,b) => {
+        if(a.status === 'Pendiente' && b.status !== 'Pendiente') return -1;
+        if(a.status !== 'Pendiente' && b.status === 'Pendiente') return 1;
+        return new Date(b.transaction_date) - new Date(a.transaction_date);
+    });
+    
+    if (recs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay cuentas registradas.</td></tr>';
+        return;
+    }
+    
+    recs.forEach(r => {
+        const bg = r.status === 'Pendiente' ? '' : 'background: rgba(16, 185, 129, 0.05);';
+        const stColor = r.status === 'Pendiente' ? '#f59e0b' : 'var(--success-color)';
+        const btnPay = r.status === 'Pendiente' ? `<button class="btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="window.prepareProcessReceivable('${r.id}')"><i class="fas fa-check"></i> Cobrar</button>` : '';
+        const clName = r.client_name || 'Desconocido';
+        const tdDesc = r.items_desc || '-';
+        
+        tbody.innerHTML += `
+            <tr style="${bg}">
+                <td><small>${new Date(r.transaction_date).toLocaleDateString()}</small><br><strong>$${parseFloat(r.total_amount).toFixed(2)}</strong></td>
+                <td>${clName}</td>
+                <td><small>${tdDesc}</small></td>
+                <td>${new Date(r.payment_date).toLocaleDateString()}</td>
+                <td style="color: ${stColor}; font-weight: bold;">${r.status}</td>
+                <td>${btnPay}</td>
+            </tr>
+        `;
+    });
+};
 
 window.openExtensionModal = function(id, fullName) {
     document.getElementById('ext-client-id').value = id;
@@ -578,6 +800,48 @@ function renderDashboard() {
     const totalProfitValue = todaysSales.reduce((sum, sale) => sum + parseFloat(sale.profit || 0), 0);
     if(document.getElementById('stat-total-profit')) {
         document.getElementById('stat-total-profit').innerText = `$${totalProfitValue.toFixed(2)}`;
+    }
+    
+    // Receivables Stats
+    if (DB.ReceivablesDB) {
+        const recs = DB.ReceivablesDB.getAll();
+        const recsPending = recs.filter(r => r.status === 'Pendiente');
+        const totalRecs = recsPending.reduce((s,r) => s + parseFloat(r.total_amount), 0);
+        const todayDateStr = new Date().toLocaleDateString();
+        const todayRecsPending = recsPending.filter(r => new Date(r.payment_date).toLocaleDateString() === todayDateStr);
+        const totalTodayRecs = todayRecsPending.reduce((s,r) => s + parseFloat(r.total_amount), 0);
+
+        if(document.getElementById('stat-receivables-total')) {
+            document.getElementById('stat-receivables-total').innerText = `$${totalRecs.toFixed(2)}`;
+            document.getElementById('stat-receivables-today').innerText = `$${totalTodayRecs.toFixed(2)}`;
+        }
+
+        if (currentUser && currentUser.role === 'Admin' && window.hasNotifiedReceivables !== true) {
+            let dueReceivables = recsPending.filter(r => {
+                let d = new Date(r.payment_date);
+                d.setHours(0,0,0,0);
+                let now = new Date();
+                now.setHours(0,0,0,0);
+                return d <= now;
+            });
+            if (dueReceivables.length > 0) {
+                window.hasNotifiedReceivables = true;
+                setTimeout(() => {
+                    alert(`¡Atención! Tienes ${dueReceivables.length} cuenta(s) por cobrar con fecha de cobro vencida o para el día de HOY.`);
+                    if (window.triggerDeviceNotification) window.triggerDeviceNotification("Cuentas Pendientes", "Hay clientes con deudas por cobrar el día de hoy.");
+                }, 1000);
+            }
+        }
+    }
+    
+    // OTP display
+    if (currentUser && currentUser.role === 'Admin') {
+        const adminUser = DB.UserDB.getAll().find(u => u.username === 'admin');
+        if (adminUser && adminUser.active_otp && document.getElementById('current-otp-display')) {
+            document.getElementById('current-otp-display').innerText = adminUser.active_otp;
+        } else if (document.getElementById('current-otp-display')) {
+            document.getElementById('current-otp-display').innerText = '-----';
+        }
     }
     
     // Product Individual Stock Cards
@@ -1365,6 +1629,7 @@ window.saveGymConfigView = function() {
 document.addEventListener('DOMContentLoaded', () => {
     const vDailyForm = document.getElementById('view-daily-pass-form');
     if(vDailyForm) {
+        // End of app.js daily pass flow inside setupforms? No this is at bottom of document.
         vDailyForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const existingClient = document.getElementById('v-daily-existing-client').value;
@@ -1374,6 +1639,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const price = parseFloat(document.getElementById('v-daily-price').value);
             const method = document.getElementById('v-daily-payment-method').value;
             
+            if (method === 'Crédito') {
+                 if(!finalName) { alert("Obligatorio elegir un cliente para crear la cuenta de crédito."); return; }
+                 window.pendingCreditData = {
+                     isDailyPass: true,
+                     pendingClientName: finalName,
+                     total_amount: price,
+                     total_cost: 0,
+                     desc: "Pase Diario Express"
+                 };
+                 window.startCreditApproveFlow();
+                 return;
+            }
+
             if(!existingClient && newName) {
                 // Registrar al cliente si se escribió nombre nuevo.
                 const newClient = {
