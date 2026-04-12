@@ -240,6 +240,38 @@ const SalesDB = {
         };
         db.collection('gym_sales').doc(saleRecord.id).set(saleRecord);
         return saleRecord;
+    },
+    registerMembershipPayment: (userId, clientName, planType, price, paymentMethod) => {
+        const saleRecord = {
+            id: `MEMBRESIA-${generateId().substring(0,5).toUpperCase()}`,
+            user_id: userId,
+            items: [{ name: `Renovación: ${planType} - ${clientName}`, qty: 1 }],
+            total_cost: 0,
+            total_amount: Number(price),
+            profit: Number(price),
+            payment_method: paymentMethod,
+            date: new Date().toISOString()
+        };
+        db.collection('gym_sales').doc(saleRecord.id).set(saleRecord);
+        return saleRecord;
+    },
+    cancelSale: (saleId, userId) => {
+        const sale = localData.gym_sales.find(s => s.id === saleId);
+        if(!sale) throw new Error("Venta no encontrada");
+        if(sale.status === 'Cancelada') throw new Error("Esta venta ya fue cancelada");
+        
+        for (const cartItem of sale.items) {
+            const item = InventoryDB.getById(cartItem.id);
+            if (item) {
+                InventoryDB.adjustStock(item.id, cartItem.qty, userId, 'IN');
+            }
+        }
+        
+        db.collection('gym_sales').doc(saleId).update({
+            status: 'Cancelada',
+            total_amount: 0,
+            profit: 0
+        });
     }
 };
 

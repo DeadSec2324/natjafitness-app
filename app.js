@@ -56,6 +56,16 @@ function showApp() {
     
     loginUserOnline(currentUser);
     
+    if(currentUser.avatar) {
+        document.getElementById('top-avatar-img').src = currentUser.avatar;
+        document.getElementById('top-avatar-img').style.display = 'block';
+        document.getElementById('top-avatar-initial').style.display = 'none';
+    } else {
+        document.getElementById('top-avatar-img').style.display = 'none';
+        document.getElementById('top-avatar-initial').style.display = 'block';
+        document.getElementById('top-avatar-initial').innerText = currentUser.username.charAt(0).toUpperCase();
+    }
+    
     // Check role, hide users tab if not admin
     if (currentUser.role === 'Staff') {
         document.body.classList.add('role-staff');
@@ -159,6 +169,7 @@ function loadView(viewName) {
         case 'sales': renderSales(); break;
         case 'clients': renderClients(); break;
         case 'daily-pass': if(window.renderDailyPassView) window.renderDailyPassView(); break;
+        case 'messages': if(window.renderMessages) window.renderMessages(); break;
         case 'reports': 
             if(currentUser.role === 'Admin') {
                 if(window.renderReports) window.renderReports();
@@ -252,6 +263,9 @@ window.editUser = function(id) {
         document.getElementById('user-username').value = user.username;
         document.getElementById('user-password').value = '';
         document.getElementById('user-role').value = user.role;
+        document.getElementById('user-training-price').value = user.training_price || '';
+        document.getElementById('user-avatar').value = '';
+        if(window.clearGallerySelection) window.clearGallerySelection();
         openModal('modal-user-form');
     }
 };
@@ -321,7 +335,7 @@ function setupForms() {
     });
     const userForm = document.getElementById('user-form');
     if(userForm) {
-        userForm.addEventListener('submit', (e) => {
+        userForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             try {
                 const id = document.getElementById('user-id').value;
@@ -332,6 +346,24 @@ function setupForms() {
                     training_price: parseFloat(document.getElementById('user-training-price').value) || 0
                 };
                 if(pwd) usrData.password = pwd;
+                
+                let avatarUrl = undefined;
+                const avatarFile = document.getElementById('user-avatar').files[0];
+                if (avatarFile) {
+                    const reader = new FileReader();
+                    const b64 = await new Promise((res, rej) => {
+                        reader.onload = () => res(reader.result);
+                        reader.onerror = () => rej('Error leyendo imagen');
+                        reader.readAsDataURL(avatarFile);
+                    });
+                    avatarUrl = b64;
+                } else if (window.selectedGalleryAvatarTemp) {
+                    avatarUrl = window.selectedGalleryAvatarTemp;
+                }
+                
+                if (avatarUrl !== undefined) {
+                    usrData.avatar = avatarUrl;
+                }
 
                 if (id) {
                     DB.UserDB.update(id, usrData);
@@ -478,9 +510,23 @@ function setupForms() {
                 window.startCreditApproveFlow();
                 return;
             }
-
+            
+            const total = cart.reduce((s,c)=>s+c.subtotal, 0);
+            document.getElementById('sale-confirm-total').innerText = `$${total.toFixed(2)}`;
+            document.getElementById('sale-confirm-method').innerText = paymentMethod;
+            const detailsHtml = cart.map(c => `<div style="display:flex; justify-content:space-between; margin-bottom: 0.2rem; border-bottom: 1px solid rgba(255,255,255,0.05);"><span>${c.qty}x ${c.name}</span> <span>$${c.subtotal.toFixed(2)}</span></div>`).join('');
+            document.getElementById('sale-confirm-details').innerHTML = detailsHtml;
+            openModal('modal-sale-confirm');
+        });
+    }
+    
+    const btnFinalProcessSale = document.getElementById('btn-final-process-sale');
+    if (btnFinalProcessSale) {
+        btnFinalProcessSale.addEventListener('click', () => {
+            const paymentMethod = document.getElementById('sale-payment-method').value || 'Efectivo';
             requireAuth((authUser) => {
                 try {
+                    closeModal('modal-sale-confirm');
                     const passMethodForNormal = document.getElementById('sale-payment-method').value || 'Efectivo';
                     DB.SalesDB.processSale(authUser.id, cart, passMethodForNormal);
                     
@@ -492,8 +538,6 @@ function setupForms() {
                     renderCart();
                     document.getElementById('btn-print-invoice').disabled = false;
                     renderSalesHistory();
-                    
-                    // Reload select just in case some stock went 0
                     populateSalesSelect();
                 } catch (error) {
                     if(error.message.includes("Stock insuficiente")) {
@@ -555,6 +599,48 @@ function setupForms() {
             });
         });
     }
+    
+    // Renew Membership Form
+    const renewForm = document.getElementById('renew-membership-form');
+    if (renewForm) {
+        renewForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const clientId = document.getElementById('renew-client-id').value;
+            const clientName = document.getElementById('renew-client-name').innerText;
+            const planType = document.getElementById('renew-plan-type').value;
+            const planDays = parseInt(document.getElementById('renew-plan-days').value, 10);
+            const price = parseFloat(document.getElementById('renew-price').value);
+            const method = document.getElementById('renew-payment-method').value;
+            
+            requireAuth((authUser) => {
+                try {
+                    // Update client payment details
+                    const client = DB.ClientsDB.getById(clientId);
+                    if (client) {
+                        const baseDate = new Date(client.payment_date);
+                        const now = new Date();
+                        // if expired, start countdown from today, otherwise add to existing expiration
+                        const newDateObj = baseDate < now ? now : baseDate;
+                        newDateObj.setDate(newDateObj.getDate() + planDays);
+                        
+                        DB.ClientsDB.update(clientId, { payment_date: newDateObj.toISOString(), extension_days: 0 });
+                        
+                        // Register Sales & Activity
+                        DB.SalesDB.registerMembershipPayment(authUser.id, clientName, planType, price, method);
+                        DB.ActivityDB.log(authUser.username, `Registró pago de membresía de $${price.toFixed(2)} para ${clientName}`);
+                        
+                        closeModal('modal-renew-membership');
+                        alert(`Pago registrado exitosamente. La nueva fecha de cobro ha sido actualizada.`);
+                        renderClients();
+                        renderDashboard();
+                    }
+                } catch(error) {
+                    alert("Error procesando pago de membresía: " + error.message);
+                }
+            });
+        });
+    }
+    
     // Créditos Events
     document.getElementById('btn-generate-otp')?.addEventListener('click', () => {
         const code = Math.floor(1000 + Math.random() * 9000).toString();
@@ -985,11 +1071,15 @@ function renderSalesHistory() {
     tbody.innerHTML = '';
     
     sales.slice(-10).reverse().forEach(s => {
+        const isCanceled = s.status === 'Cancelada';
         tbody.innerHTML += `
             <tr>
                 <td>${new Date(s.date).toLocaleString()}</td>
                 <td>${s.id}</td>
-                <td>$${parseFloat(s.total_amount).toFixed(2)}</td>
+                <td>${isCanceled ? '<s style="color:var(--danger-color)">$'+parseFloat(s.total_amount).toFixed(2)+'</s> <small style="color:var(--danger-color)">(Cancelada)</small>' : '$'+parseFloat(s.total_amount).toFixed(2)}</td>
+                <td class="admin-only">
+                    ${!isCanceled ? `<button class="btn-icon" style="color:var(--danger-color); padding: 0.2rem 0.5rem;" onclick="cancelSale('${s.id}')" title="Cancelar Venta"><i class="fas fa-ban"></i></button>` : ''}
+                </td>
             </tr>
         `;
     });
@@ -1313,6 +1403,7 @@ window.showClientsCategory = function(category) {
                     <td>${pdate} ${expBadge}</td>
                     <td class="action-btns admin-only">
                         ${c.plan_type === 'Diario' ? `<button class="btn-icon" style="color: var(--success-color);" onclick="openDailyPassModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}', '${c.trainer_id || ''}')" title="Cobrar Pase Diario"><i class="fas fa-ticket-alt"></i></button>` : ''}
+                        ${c.plan_type !== 'Diario' ? `<button class="btn-icon" style="color: var(--success-color);" onclick="openRenewModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}', '${c.plan_type}')" title="Pagar Membresía"><i class="fas fa-dollar-sign"></i></button>` : ''}
                         <button class="btn-icon" style="color: #f59e0b;" onclick="openExtensionModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}')" title="Otorgar Prórroga"><i class="fas fa-calendar-plus"></i></button>
                         <button class="btn-icon" onclick="editClient('${c.id}')" title="Editar"><i class="fas fa-edit"></i></button>
                         ${currentUser.role === 'Admin' ? `<button class="btn-icon" style="color: var(--danger-color)" onclick="deleteClient('${c.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
@@ -1394,6 +1485,51 @@ window.deleteClient = function(id) {
 window.removeFromCart = function(index) {
     cart.splice(index, 1);
     renderCart();
+}
+
+window.cancelSale = function(id) {
+    if(confirm('¿Estás seguro de cancelar esta venta? El stock de los artículos devueltos se sumará nuevamente y el efectivo se marcará en 0.')) {
+        try {
+            DB.SalesDB.cancelSale(id, currentUser.id);
+            if(currentUser) DB.ActivityDB.log(currentUser.username, `Canceló la venta con ID ${id}`);
+            alert('Venta cancelada exitosamente.');
+            renderSalesHistory();
+            renderDashboard();
+            populateSalesSelect();
+        } catch(err) {
+            alert("No se pudo cancelar: " + err.message);
+        }
+    }
+}
+
+window.openRenewModal = function(id, name, planType) {
+    let days = 30;
+    if(planType === 'Quincenal') days = 15;
+    else if(planType === 'Diario') days = 1;
+    
+    document.getElementById('renew-client-id').value = id;
+    document.getElementById('renew-client-name').innerText = name;
+    document.getElementById('renew-plan-type').value = planType;
+    document.getElementById('renew-plan-days').value = days;
+    
+    document.getElementById('renew-plan-name-display').innerText = planType;
+    document.getElementById('renew-plan-days-display').innerText = `+${days} días`;
+    document.getElementById('renew-price').value = '';
+    
+    openModal('modal-renew-membership');
+}
+
+window.selectedGalleryAvatarTemp = null;
+window.selectGalleryAvatar = function(src, el) {
+    window.selectedGalleryAvatarTemp = src;
+    document.querySelectorAll('.gallery-avatar').forEach(img => img.style.borderColor = 'transparent');
+    el.style.borderColor = 'var(--accent-color)';
+    const fileInput = document.getElementById('user-avatar');
+    if(fileInput) fileInput.value = '';
+}
+window.clearGallerySelection = function() {
+    window.selectedGalleryAvatarTemp = null;
+    document.querySelectorAll('.gallery-avatar').forEach(img => img.style.borderColor = 'transparent');
 }
 
 // Data Export & Import

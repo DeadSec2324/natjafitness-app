@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gym Inventory Pro</title>
+    <title>EJ Profit: V&G</title>
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
@@ -24,7 +24,7 @@
     <div id="login-view">
         <div class="glass-panel login-card">
             <i class="fas fa-dumbbell"></i>
-            <h2>GymInventory Pro</h2>
+            <h2>EJ Profit: V&G</h2>
             <p>Inicia sesión para acceder</p>
             <form id="login-form">
                 <input type="text" id="login-username" placeholder="Usuario" required>
@@ -47,7 +47,7 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <i class="fas fa-dumbbell"></i>
-                <h2>GymPro</h2>
+                <h2 style="font-size: 1.25rem;">EJ Profit: V&G</h2>
             </div>
             <nav class="sidebar-nav">
                 <a class="nav-item active" data-target="dashboard">
@@ -96,8 +96,9 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
                         <span id="current-user-name">Admin</span>
-                        <div style="width: 35px; height: 35px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem;">
-                            A
+                        <div id="top-avatar-container" style="width: 35px; height: 35px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; overflow: hidden; border: 2px solid var(--border-color);">
+                            <span id="top-avatar-initial">A</span>
+                            <img id="top-avatar-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
                         </div>
                     </div>
                 </div>
@@ -338,6 +339,7 @@
                                         <th>Fecha</th>
                                         <th>ID Venta</th>
                                         <th>Total</th>
+                                        <th class="admin-only">Acción</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -631,6 +633,18 @@
                     <option value="Staff">Staff / Entrenador (Solo ventas, inventario y clientes)</option>
                     <option value="Admin">Administrador (Acceso total)</option>
                 </select>
+                <div style="margin-top: 1rem;">
+                    <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 0.5rem;">Avatar del Sistema</label>
+                    <div id="avatar-gallery" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; overflow-x: auto; padding-bottom: 0.5rem;">
+                        <img src="avatar1.png" class="gallery-avatar default" style="width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; object-fit: cover;" onclick="selectGalleryAvatar('avatar1.png', this)">
+                        <img src="avatar2.png" class="gallery-avatar default" style="width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; object-fit: cover;" onclick="selectGalleryAvatar('avatar2.png', this)">
+                        <img src="avatar3.png" class="gallery-avatar default" style="width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; object-fit: cover;" onclick="selectGalleryAvatar('avatar3.png', this)">
+                    </div>
+                </div>
+                <div style="margin-top: 0;">
+                    <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">O sube tu propia foto</label>
+                    <input type="file" id="user-avatar" accept="image/png, image/jpeg, image/webp" style="margin-top: 0; width: 100%; font-size: 0.85rem;" onchange="clearGallerySelection()">
+                </div>
                 <input type="number" id="user-training-price" placeholder="Tarifa Entrenador Mensual ($) - Opcional" step="0.01" style="margin-top:1rem;">
                 <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                     <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-user-form')">Cancelar</button>
@@ -800,6 +814,66 @@
                 <div style="display: flex; gap: 1rem;">
                     <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-daily-pass')">Cancelar</button>
                     <button type="submit" class="btn-success" style="flex:1;">Procesar Pase</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sale Confirmation Modal -->
+    <div class="modal-overlay" id="modal-sale-confirm" style="z-index: 10000;">
+        <div class="glass-panel modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-shopping-basket"></i> Confirmar Venta</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-sale-confirm')"></i>
+            </div>
+            <div id="sale-confirm-details" style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; max-height: 200px; overflow-y: auto;">
+                <!-- Filled by JS -->
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: bold; color: var(--success-color); margin-bottom: 1rem; border-top: 1px dashed var(--border-color); padding-top: 1rem;">
+                <span>Total a Cobrar:</span>
+                <span id="sale-confirm-total">$0.00</span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Método: <strong id="sale-confirm-method"></strong></p>
+            <div style="display: flex; gap: 1rem;">
+                <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-sale-confirm')">Cancelar</button>
+                <button type="button" class="btn-success" style="flex:1;" id="btn-final-process-sale"><i class="fas fa-check"></i> Proceder a Pagar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Renew Membership Modal -->
+    <div class="modal-overlay" id="modal-renew-membership" style="z-index: 10000;">
+        <div class="glass-panel modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header">
+                <h3><i class="fas fa-money-bill-wave"></i> Pagar Membresía</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-renew-membership')"></i>
+            </div>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">Renovación de <strong id="renew-client-name"></strong>.</p>
+            <form id="renew-membership-form">
+                <input type="hidden" id="renew-client-id">
+                <input type="hidden" id="renew-plan-type">
+                <input type="hidden" id="renew-plan-days">
+                <div style="margin-bottom: 1rem; text-align: left;">
+                    <label style="font-size: 0.85rem; color: var(--text-secondary); display:block; margin-bottom:0.25rem;">Información del Plan:</label>
+                    <div style="background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 4px; font-size: 0.9rem;">
+                        Plan: <strong id="renew-plan-name-display" style="color: var(--primary-color);"></strong><br>
+                        Se sumarán: <strong id="renew-plan-days-display">0 días</strong>
+                    </div>
+                </div>
+                <div style="margin-bottom: 1rem; text-align: left;">
+                    <label style="font-size: 0.85rem; color: var(--text-secondary); display:block; margin-bottom:0.25rem;">Monto a Cobrar ($):</label>
+                    <input type="number" id="renew-price" placeholder="Monto" min="0" step="0.01" required style="width: 100%;">
+                </div>
+                <div style="margin-bottom: 1.5rem; text-align: left;">
+                    <label style="font-size: 0.85rem; color: var(--text-secondary); display:block; margin-bottom:0.25rem;">Método de Pago:</label>
+                    <select id="renew-payment-method" required style="width: 100%;">
+                        <option value="Efectivo" selected>Efectivo</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-renew-membership')">Cancelar</button>
+                    <button type="submit" class="btn-success" style="flex:1;"><i class="fas fa-check-circle"></i> Procesar Pago</button>
                 </div>
             </form>
         </div>
