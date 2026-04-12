@@ -17,13 +17,16 @@
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS for Excel Exports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
     <!-- Login View -->
     <div id="login-view">
         <div class="glass-panel login-card">
-            <img src="ej_profit_logo.jpg" alt="EJ Profit Logo" style="width: 140px; height: 140px; object-fit: contain; margin-bottom: 0.5rem; mix-blend-mode: screen;">
+            <img src="ej_profit_logo.jpg" alt="EJ Profit Logo" class="main-logo" style="mix-blend-mode: screen;">
+            <h2 class="brand-title desktop-only">EJ Profit V&G</h2>
             <p>Inicia sesión para acceder</p>
             <form id="login-form">
                 <input type="text" id="login-username" placeholder="Usuario" required>
@@ -44,8 +47,9 @@
     <div id="app-view">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header" style="justify-content: center; padding-top: 1rem;">
-                <img src="ej_profit_logo.jpg" alt="Logo" style="width: 100px; height: 100px; object-fit: contain; mix-blend-mode: screen;">
+            <div class="sidebar-header" style="justify-content: center; align-items: center; padding-top: 1rem; flex-direction: column; gap: 0.5rem;">
+                <img src="ej_profit_logo.jpg" alt="Logo" class="sidebar-logo" style="mix-blend-mode: screen;">
+                <h2 class="brand-title desktop-only" style="font-size: 1.25rem;">EJ Profit V&G</h2>
             </div>
             <nav class="sidebar-nav">
                 <a class="nav-item active" data-target="dashboard">
@@ -207,6 +211,34 @@
 
                 <!-- Reports View -->
                 <section id="view-reports" class="view-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2 style="margin:0;"><i class="fas fa-chart-pie"></i> Análisis Financiero</h2>
+                        <button class="btn-success" onclick="if(window.exportReportsToExcel) window.exportReportsToExcel()" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                            <i class="fas fa-file-excel"></i> Exportar a Excel
+                        </button>
+                    </div>
+                    
+                    <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                        <h3>Comparativa Anual por Meses</h3>
+                        <div style="height: 300px; width: 100%;">
+                            <canvas id="chart-monthly-comparison"></canvas>
+                        </div>
+                        <div class="table-container" style="margin-top: 1.5rem;">
+                            <table id="table-monthly-comparison">
+                                <thead>
+                                    <tr>
+                                        <th>Mes</th>
+                                        <th>Ingresos Brutos ($)</th>
+                                        <th>Cantidad de Ventas</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.5rem;">
                         <h3>Resumen de Ventas de la Semana Actual</h3>
                         <div style="height: 300px; width: 100%;">
