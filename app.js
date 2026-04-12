@@ -1474,6 +1474,63 @@ window.editClient = function(id) {
     document.getElementById('modal-client-form').classList.add('active');
 }
 
+window.exportReportsToExcel = function() {
+    if (typeof XLSX === 'undefined') {
+        alert("La librería de exportación aún no ha cargado (o no hay conexión a internet). Intenta nuevamente en unos segundos.");
+        return;
+    }
+
+    const sales = DB.SalesDB.getAll();
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const msInDay = 1000 * 60 * 60 * 24;
+
+    const exportDaily = [];
+    const exportWeekly = [];
+    const exportMonthly = [];
+
+    const formatSaleRow = (s) => {
+        const itemNames = (s.items || []).map(i => `${i.qty || 1}x ${i.name || 'Desconocido'}`).join(' + ');
+        return {
+            "Fecha Emisión": new Date(s.date).toLocaleString(),
+            "ID Venta": s.id,
+            "Descripción de Artículos": itemNames,
+            "Método de Pago": s.payment_method || 'Desconocido',
+            "Estado": s.status === 'Cancelada' ? 'Cancelada' : 'Completada',
+            "Total Generado ($)": parseFloat(s.total_amount || 0).toFixed(2)
+        };
+    };
+
+    sales.forEach(s => {
+        const sDate = new Date(s.date);
+        const sDateMidnight = new Date(sDate);
+        sDateMidnight.setHours(0,0,0,0);
+        
+        const dayDiff = Math.floor((today - sDateMidnight) / msInDay);
+        const rowData = formatSaleRow(s);
+
+        if (dayDiff === 0) exportDaily.push(rowData);
+        if (dayDiff < 7) exportWeekly.push(rowData);
+        if (dayDiff < 30) exportMonthly.push(rowData);
+    });
+
+    if(exportDaily.length === 0) exportDaily.push({"Mensaje": "Sin ventas registradas hoy"});
+    if(exportWeekly.length === 0) exportWeekly.push({"Mensaje": "Sin ventas en la última semana"});
+    if(exportMonthly.length === 0) exportMonthly.push({"Mensaje": "Sin ventas en el último mes"});
+
+    const wsDaily = XLSX.utils.json_to_sheet(exportDaily);
+    const wsWeekly = XLSX.utils.json_to_sheet(exportWeekly);
+    const wsMonthly = XLSX.utils.json_to_sheet(exportMonthly);
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, wsDaily, "Diario (Hoy)");
+    XLSX.utils.book_append_sheet(wb, wsWeekly, "Semanal (Últimos 7 días)");
+    XLSX.utils.book_append_sheet(wb, wsMonthly, "Mensual (Últimos 30 días)");
+
+    XLSX.writeFile(wb, `Reporte_Estadistico_${new Date().toLocaleDateString().replace(/\//g,'-')}.xlsx`);
+    if(window.currentUser) DB.ActivityDB.log(window.currentUser.username, "Exportó informe estadístico múltiple a Excel");
+};
+
 window.deleteClient = function(id) {
     if(confirm('¿Seguro que desea eliminar este cliente?')) {
         DB.ClientsDB.remove(id);
@@ -1600,6 +1657,7 @@ if(fileImport) {
 }
 
 // Reports Implementation
+let monthlyComparisonChartInstance = null;
 let weeklyChartInstance = null;
 let paymentChartInstance = null;
 let deptChartInstance = null;
@@ -1612,10 +1670,17 @@ window.renderReports = function() {
     
     const today = new Date();
     today.setHours(0,0,0,0);
+    const currentYear = today.getFullYear();
     const dayOfWeek = today.getDay();
     const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     const currentMonday = new Date(today);
     currentMonday.setDate(today.getDate() - daysSinceMonday);
+    
+    const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    let monthlyComparison = {};
+    for (let i = 0; i < 12; i++) {
+        monthlyComparison[i] = { amount: 0, count: 0 };
+    }
     
     let weeklyTotals = [0,0,0,0,0,0,0];
     let cashTotal = 0;
@@ -1624,7 +1689,15 @@ window.renderReports = function() {
     let deptTotals = {};
     
     sales.forEach(s => {
+        if(s.status === 'Cancelada') return; // Exclude disabled sales from reports
+        
         const sDate = new Date(s.date);
+        if (sDate.getFullYear() === currentYear) {
+            const m = sDate.getMonth();
+            monthlyComparison[m].amount += parseFloat(s.total_amount);
+            monthlyComparison[m].count += 1;
+        }
+
         sDate.setHours(0,0,0,0);
         
         const dayDiff = Math.floor((sDate - currentMonday) / (1000 * 60 * 60 * 24));
@@ -1646,6 +1719,44 @@ window.renderReports = function() {
            deptTotals[category] += i.subtotal || (i.price * i.qty) || 0;
         });
     });
+
+    // --- Monthly Comparison Rendering ---
+    const ctxMonthly = document.getElementById('chart-monthly-comparison');
+    if (ctxMonthly) {
+        if(monthlyComparisonChartInstance) monthlyComparisonChartInstance.destroy();
+        monthlyComparisonChartInstance = new Chart(ctxMonthly, {
+            type: 'line',
+            data: {
+                labels: monthNames,
+                datasets: [{
+                    label: `Ingresos (${currentYear})`,
+                    data: monthNames.map((_, i) => monthlyComparison[i].amount),
+                    backgroundColor: 'rgba(212, 59, 219, 0.2)',
+                    borderColor: 'rgba(212, 59, 219, 1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    const tBodyMonthly = document.querySelector('#table-monthly-comparison tbody');
+    if (tBodyMonthly) {
+        tBodyMonthly.innerHTML = '';
+        monthNames.forEach((name, i) => {
+            const data = monthlyComparison[i];
+            if (data.count > 0 || data.amount > 0) {
+                tBodyMonthly.innerHTML += `<tr>
+                    <td style="font-weight:bold; color:var(--primary-color);">${name} ${currentYear}</td>
+                    <td>$${data.amount.toFixed(2)}</td>
+                    <td>${data.count}</td>
+                </tr>`;
+            }
+        });
+        if(tBodyMonthly.innerHTML === '') tBodyMonthly.innerHTML = '<tr><td colspan="3">Aún no hay datos para este año</td></tr>';
+    }
 
     const ctxWeekly = document.getElementById('chart-weekly-sales');
     if(weeklyChartInstance) weeklyChartInstance.destroy();
