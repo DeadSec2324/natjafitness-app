@@ -50,6 +50,14 @@ body {
 
 /* Typography */
 h1, h2, h3, h4 { font-weight: 600; color: var(--text-primary); margin-bottom: 1rem; letter-spacing: -0.02em; }
+.brand-title {
+    background: -webkit-linear-gradient(45deg, #0a84ff, #d43bdb);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+    margin-bottom: 0;
+}
 p { color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.5; font-size: 0.95rem; }
 
 /* Buttons & Inputs */
