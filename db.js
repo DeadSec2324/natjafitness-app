@@ -130,6 +130,7 @@ const UserDB = {
             password: user.password, 
             role: user.role,
             training_price: Number(user.training_price) || 0,
+            expected_revenue: Number(user.expected_revenue) || 0,
             is_online: false,
             last_login: null,
             first_login_today: null
@@ -371,7 +372,22 @@ const MessagesDB = {
     }
 };
 
+const SystemDB = {
+    factoryReset: async () => {
+        const collections = ['gym_inventory', 'gym_activity', 'gym_clients', 'gym_sales', 'gym_transactions', 'gym_messages', 'gym_receivables'];
+        for(let col of collections) {
+            const snap = await db.collection(col).get();
+            const batch = db.batch();
+            snap.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+        }
+    }
+};
+
 window.DB = {
+    SystemDB,
     UserDB,
     InventoryDB,
     SalesDB,
