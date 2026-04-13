@@ -524,9 +524,9 @@ function setupForms() {
     if (btnFinalProcessSale) {
         btnFinalProcessSale.addEventListener('click', () => {
             const paymentMethod = document.getElementById('sale-payment-method').value || 'Efectivo';
+            closeModal('modal-sale-confirm');
             requireAuth((authUser) => {
                 try {
-                    closeModal('modal-sale-confirm');
                     const passMethodForNormal = document.getElementById('sale-payment-method').value || 'Efectivo';
                     DB.SalesDB.processSale(authUser.id, cart, passMethodForNormal);
                     
@@ -1542,6 +1542,29 @@ window.deleteClient = function(id) {
 window.removeFromCart = function(index) {
     cart.splice(index, 1);
     renderCart();
+}
+
+window.factoryResetSystem = function() {
+    if(prompt("PRECAUCIÓN EXTREMA: Esto eliminará de forma irreversible TODO el inventario, clientes, historial de ventas y flujos de caja. Escribe exactamente 'CONFIRMAR' (en mayúsculas) para ejecutar:") === 'CONFIRMAR') {
+        requireAuth((authUser) => {
+            if(authUser.role !== 'Admin') return alert("Denegado: Solo el perfil Administrador maestro puede vaciar la base de datos.");
+            try {
+                localStorage.setItem('gym_inventory', '[]');
+                localStorage.setItem('gym_clients', '[]');
+                localStorage.setItem('gym_sales', '[]');
+                localStorage.setItem('gym_transactions', '[]');
+                localStorage.removeItem('gym_daily_prices');
+                
+                DB.ActivityDB.log(authUser.username, "¡REALIZÓ UN BORRADO GENERAL (FACTORY RESET) DE TODA LA BASE DE DATOS MANTENIENDO SOLO USUARIOS!");
+                alert("Limpieza a cero completada con éxito. El sistema está ahora como nuevo. Redirigiendo...");
+                window.location.reload();
+            } catch(e) {
+                alert("Error al intentar limpiar el almacenamiento: " + e.message);
+            }
+        });
+    } else {
+        alert("Operación cancelada. El comando no coincidió perfectamente con 'CONFIRMAR'");
+    }
 }
 
 window.cancelSale = function(id) {
