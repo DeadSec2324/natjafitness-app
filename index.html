@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -27,10 +27,10 @@
         <div class="glass-panel login-card">
             <img src="ej_profit_logo.jpg" alt="EJ Profit Logo" class="main-logo" style="mix-blend-mode: screen;">
             <h2 class="brand-title desktop-only">EJ Profit V&G</h2>
-            <p>Inicia sesiÃƒÆ’Ã‚Â³n para acceder</p>
+            <p>Inicia sesiÃ³n para acceder</p>
             <form id="login-form">
                 <input type="text" id="login-username" placeholder="Usuario" required>
-                <input type="password" id="login-password" placeholder="ContraseÃƒÆ’Ã‚Â±a" required>
+                <input type="password" id="login-password" placeholder="ContraseÃ±a" required>
                 <div id="login-error" style="color: var(--danger-color); margin-bottom: 1rem; display: none;"></div>
                 <button type="submit" class="btn-primary" style="width: 100%;">
                     <i class="fas fa-sign-in-alt"></i> Entrar
@@ -72,9 +72,6 @@
                 </a>
                 <a class="nav-item" data-target="users" id="nav-users" style="display: none;">
                     <i class="fas fa-users"></i> Usuarios
-                </a>
-                <a class="nav-item admin-only" data-target="settings" id="nav-settings" style="display: none;">
-                    <i class="fas fa-cogs"></i> ConfiguraciÃƒÂ³n POS
                 </a>
                 <a class="nav-item" data-target="reports" id="nav-reports" style="display: none;">
                     <i class="fas fa-chart-pie"></i> Reportes
@@ -130,7 +127,7 @@
                             <div class="stat-icon"><i class="fas fa-box"></i></div>
                             <div class="stat-info">
                                 <h3 id="stat-total-items">0</h3>
-                                <span>ArtÃƒÆ’Ã‚Â­culos en Stock</span>
+                                <span>ArtÃ­culos en Stock</span>
                             </div>
                         </div>
                         <div class="glass-panel stat-card">
@@ -165,18 +162,18 @@
                     
                     <!-- Auth OTP (Admin only) -->
                     <div class="glass-panel admin-only" id="otp-panel" style="padding: 1.5rem; margin-bottom: 1.5rem;">
-                        <h3>AutorizaciÃƒÆ’Ã‚Â³n de CrÃƒÆ’Ã‚Â©ditos (OTP)</h3>
-                        <p style="margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Genera un cÃƒÆ’Ã‚Â³digo de un solo uso para que el equipo pueda ingresar una venta a crÃƒÆ’Ã‚Â©dito.</p>
+                        <h3>AutorizaciÃ³n de CrÃ©ditos (OTP)</h3>
+                        <p style="margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Genera un cÃ³digo de un solo uso para que el equipo pueda ingresar una venta a crÃ©dito.</p>
                         <div style="display: flex; gap: 1rem; align-items: center;">
-                            <button id="btn-generate-otp" class="btn-primary">Generar CÃƒÆ’Ã‚Â³digo Nuevo</button>
+                            <button id="btn-generate-otp" class="btn-primary">Generar CÃ³digo Nuevo</button>
                             <div style="font-size: 1.5rem; font-weight: bold; letter-spacing: 5px; color: var(--accent-color);" id="current-otp-display">-----</div>
                         </div>
                     </div>
                     
                     <!-- Data Backup (Admin only) -->
                     <div class="glass-panel admin-only" id="backup-panel" style="padding: 1.5rem; margin-bottom: 1.5rem; display: none;">
-                        <h3>GestiÃƒÆ’Ã‚Â³n de Datos y Respaldos</h3>
-                        <p style="margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Debido a que hemos migrado a la nube, los datos ya estÃƒÆ’Ã‚Â¡n seguros y respaldados por Google Firebase de manera automÃƒÆ’Ã‚Â¡tica.</p>
+                        <h3>GestiÃ³n de Datos y Respaldos</h3>
+                        <p style="margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Debido a que hemos migrado a la nube, los datos ya estÃ¡n seguros y respaldados por Google Firebase de manera automÃ¡tica.</p>
                     </div>
 
                     <div class="glass-panel admin-only" style="padding: 1.5rem; margin-bottom: 1.5rem;">
@@ -211,7 +208,7 @@
                                 <thead>
                                     <tr>
                                         <th>Fecha</th>
-                                        <th>ArtÃƒÆ’Ã‚Â­culo</th>
+                                        <th>ArtÃ­culo</th>
                                         <th>Tipo</th>
                                         <th>Cantidad</th>
                                     </tr>
@@ -227,7 +224,7 @@
                 <!-- Reports View -->
                 <section id="view-reports" class="view-section">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h2 style="margin:0;"><i class="fas fa-chart-pie"></i> AnÃƒÆ’Ã‚Â¡lisis Financiero</h2>
+                        <h2 style="margin:0;"><i class="fas fa-chart-pie"></i> AnÃ¡lisis Financiero</h2>
                         <button class="btn-success" onclick="if(window.exportReportsToExcel) window.exportReportsToExcel()" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
                             <i class="fas fa-file-excel"></i> Exportar a Excel
                         </button>
@@ -243,7 +240,7 @@
 
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
                         <div class="glass-panel" style="padding: 1.5rem;">
-                            <h3 style="color: var(--success-color);"><i class="fas fa-arrow-up"></i> Top 5 MÃƒÆ’Ã‚Â¡s Vendidos</h3>
+                            <h3 style="color: var(--success-color);"><i class="fas fa-arrow-up"></i> Top 5 MÃ¡s Vendidos</h3>
                             <ul id="top-5-best" style="list-style: none; padding: 0; margin: 0; color: var(--text-secondary);"></ul>
                         </div>
                         <div class="glass-panel" style="padding: 1.5rem;">
@@ -287,7 +284,7 @@
                             </div>
                         </div>
                         <div class="glass-panel" style="padding: 1.5rem;">
-                            <h3>Ganancias por Departamento / ArtÃƒÆ’Ã‚Â­culo</h3>
+                            <h3>Ganancias por Departamento / ArtÃ­culo</h3>
                             <div style="height: 250px; width: 100%;">
                                 <canvas id="chart-departments"></canvas>
                             </div>
@@ -301,7 +298,7 @@
                             <div style="height: 250px; width: 100%; margin-bottom: 2rem;">
                                 <canvas id="chart-trainer-weekly"></canvas>
                             </div>
-                            <h3>Resumen EstadÃƒÆ’Ã‚Â­stico de Entrenadores</h3>
+                            <h3>Resumen EstadÃ­stico de Entrenadores</h3>
                             <div class="table-container">
                                 <table id="trainer-performance-table">
                                     <thead>
@@ -324,8 +321,8 @@
                 <section id="view-inventory" class="view-section">
                     <div class="glass-panel" style="padding: 1.5rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                            <h3>GestiÃƒÆ’Ã‚Â³n de Inventario</h3>
-                            <button id="btn-add-item" class="btn-primary admin-only"><i class="fas fa-plus"></i> Nuevo ArtÃƒÆ’Ã‚Â­culo</button>
+                            <h3>GestiÃ³n de Inventario</h3>
+                            <button id="btn-add-item" class="btn-primary admin-only"><i class="fas fa-plus"></i> Nuevo ArtÃ­culo</button>
                         </div>
                         <div class="table-container">
                             <table id="inventory-table">
@@ -333,7 +330,7 @@
                                     <tr>
                                         <th>ID</th>
                                         <th>Nombre</th>
-                                        <th>DescripciÃƒÆ’Ã‚Â³n</th>
+                                        <th>DescripciÃ³n</th>
                                         <th>Costo</th>
                                         <th>Precio Venta</th>
                                         <th>Stock</th>
@@ -355,17 +352,17 @@
                             <h3>Realizar Venta</h3>
                             <div class="flex-row">
                                 <select id="sale-item-select">
-                                    <option value="">Seleccione un artÃƒÆ’Ã‚Â­culo...</option>
+                                    <option value="">Seleccione un artÃ­culo...</option>
                                     <!-- Populated by JS -->
                                 </select>
                                 <input type="number" id="sale-item-qty" placeholder="Cantidad" min="1" value="1" style="max-width: 100px;">
-                                <button id="btn-add-to-cart" class="btn-primary">AÃƒÆ’Ã‚Â±adir</button>
+                                <button id="btn-add-to-cart" class="btn-primary">AÃ±adir</button>
                             </div>
                             <div class="table-container mt-4">
                                 <table id="cart-table">
                                     <thead>
                                         <tr>
-                                            <th>ArtÃƒÆ’Ã‚Â­culo</th>
+                                            <th>ArtÃ­culo</th>
                                             <th>Cant.</th>
                                             <th>Precio Unit.</th>
                                             <th>Subtotal</th>
@@ -392,23 +389,12 @@
                                 </div>
                             </div>
                             <div style="margin-bottom: 1rem;">
-                                <label for="sale-payment-method" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">MÃƒÂ©todo de Pago:</label>
+                                <label for="sale-payment-method" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">MÃ©todo de Pago:</label>
                                 <select id="sale-payment-method" style="width: 100%;" required>
                                     <option value="Efectivo" selected>Caja / Efectivo</option>
                                     <option value="Tarjeta">Pago con Tarjeta</option>
-                                    <option value="CrÃƒÂ©dito">Cuentas por cobrar (CrÃƒÂ©dito)</option>
+                                    <option value="CrÃ©dito">Cuentas por cobrar (CrÃ©dito)</option>
                                 </select>
-                            </div>
-                            <div style="margin-bottom: 1rem;">
-                                <label style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: block;">Tipo de Comprobante (Rep. Dom.):</label>
-                                <div style="display: flex; gap: 1rem;">
-                                    <label><input type="radio" name="sale-ncf-type" value="cons_final" checked onchange="document.getElementById('sale-ncf-container').style.display='none'"> Cons. Final</label>
-                                    <label><input type="radio" name="sale-ncf-type" value="cred_fiscal" onchange="document.getElementById('sale-ncf-container').style.display='block'"> CrÃƒÂ©dito Fiscal</label>
-                                </div>
-                            </div>
-                            <div id="sale-ncf-container" style="display: none; margin-bottom: 1rem;">
-                                <input type="text" id="sale-rnc-input" placeholder="RNC/CÃƒÂ©dula del cliente" class="form-input" style="width:100%;">
-                                <input type="text" id="sale-rnc-name" placeholder="RazÃƒÂ³n Social" class="form-input" style="width:100%; margin-top:0.5rem;" disabled>
                             </div>
                             <button id="btn-process-sale" class="btn-success" style="width: 100%; margin-bottom: 1rem;"><i class="fas fa-check-circle"></i> Procesar Venta</button>
                             <button id="btn-print-invoice" class="btn-primary" style="width: 100%; background: var(--card-bg); border: 1px solid var(--border-color);" disabled><i class="fas fa-print"></i> Imprimir Factura</button>
@@ -424,7 +410,7 @@
                                         <th>Fecha</th>
                                         <th>ID Venta</th>
                                         <th>Total</th>
-                                        <th class="admin-only">AcciÃƒÆ’Ã‚Â³n</th>
+                                        <th class="admin-only">AcciÃ³n</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -439,11 +425,11 @@
                 <section id="view-clients" class="view-section">
                     <div class="glass-panel" style="padding: 1.5rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                            <h3>GestiÃƒÆ’Ã‚Â³n de Clientes</h3>
+                            <h3>GestiÃ³n de Clientes</h3>
                             <button id="btn-add-client" class="btn-primary"><i class="fas fa-plus"></i> Nuevo Cliente</button>
                         </div>
                         
-                        <!-- CategorÃƒÆ’Ã‚Â­as -->
+                        <!-- CategorÃ­as -->
                         <div class="stats-grid" style="margin-bottom: 2rem;">
                             <div class="glass-panel stat-card client-cat-card" onclick="showClientsCategory('Mensual')" style="cursor: pointer;">
                                 <div class="stat-icon" style="background: rgba(59, 130, 246, 0.2); color: var(--primary-color);"><i class="fas fa-calendar-alt"></i></div>
@@ -485,7 +471,7 @@
                         <!-- Lista de Clientes -->
                         <div id="clients-list-container" style="display: none;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                                <h4 id="client-category-title" style="color: var(--primary-color); margin:0;">CategorÃƒÆ’Ã‚Â­a</h4>
+                                <h4 id="client-category-title" style="color: var(--primary-color); margin:0;">CategorÃ­a</h4>
                                 <button class="btn-icon" onclick="document.getElementById('clients-list-container').style.display='none'" title="Cerrar Lista"><i class="fas fa-times"></i> Cerrar</button>
                             </div>
                             <div class="table-container">
@@ -493,7 +479,7 @@
                                     <thead>
                                         <tr>
                                             <th>Nombre Completo</th>
-                                            <th>Datos FÃƒÆ’Ã‚Â­sicos</th>
+                                            <th>Datos FÃ­sicos</th>
                                             <th>Contacto</th>
                                             <th>Plan</th>
                                             <th>Pago</th>
@@ -520,7 +506,7 @@
                             <table id="receivables-table">
                                 <thead>
                                     <tr>
-                                        <th>Fecha / TransacciÃƒÆ’Ã‚Â³n</th>
+                                        <th>Fecha / TransacciÃ³n</th>
                                         <th>Cliente</th>
                                         <th>Detalles de Deuda</th>
                                         <th>Fecha a Cobrar</th>
@@ -541,7 +527,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
                         <h2>Presupuesto y Gastos (Egresos)</h2>
                         <button class="btn-success" onclick="document.getElementById('modal-expense-form').classList.add('active')">
-                            <i class="fas fa-plus"></i> AÃƒÆ’Ã‚Â±adir Gasto
+                            <i class="fas fa-plus"></i> AÃ±adir Gasto
                         </button>
                     </div>
                     <div class="glass-panel" style="padding: 1.5rem;">
@@ -564,7 +550,7 @@
                 <section id="view-users" class="view-section">
                     <div class="glass-panel" style="padding: 1.5rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                            <h3>GestiÃƒÆ’Ã‚Â³n de Usuarios</h3>
+                            <h3>GestiÃ³n de Usuarios</h3>
                             <button id="btn-add-user" class="btn-primary"><i class="fas fa-user-plus"></i> Nuevo Usuario</button>
                         </div>
                         <div class="table-container">
@@ -587,43 +573,11 @@
 
                 </section>
 
-                <!-- Settings View -->
-                <section id="view-settings" class="view-section admin-only">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                        <h2>ConfiguraciÃƒÂ³n del Sistema POS</h2>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-                        <div class="glass-panel" style="padding: 1.5rem;">
-                            <h3><i class="fas fa-building"></i> Datos Corporativos (FacturaciÃƒÂ³n)</h3>
-                            <div class="flex-column" style="gap: 1rem; margin-top: 1rem;">
-                                <div><label>Nombre del Gimnasio</label><input type="text" id="conf-gym-name" placeholder="Ej. EJ Profit V&G" class="form-input"></div>
-                                <div><label>RNC / IdentificaciÃƒÂ³n Tributaria</label><input type="text" id="conf-gym-rnc" placeholder="RNC o NIT comercial" class="form-input"></div>
-                                <div><label>TelÃƒÂ©fono Comercial</label><input type="text" id="conf-gym-phone" placeholder="TelÃƒÂ©fono" class="form-input"></div>
-                                <div><label>DirecciÃƒÂ³n FÃƒÂ­sica</label><input type="text" id="conf-gym-address" placeholder="DirecciÃƒÂ³n del local" class="form-input"></div>
-                            </div>
-                        </div>
-
-                        <div class="glass-panel" style="padding: 1.5rem;">
-                            <h3><i class="fas fa-credit-card"></i> IntegraciÃƒÂ³n Verifone POS Cloud</h3>
-                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Asocia los datos de tu terminal fÃƒÂ­sica provistos por tu banco corporativo o Verifone Central para permitir despertar la terminal desde el sistema web (WakeUp API).</p>
-                            <div class="flex-column" style="gap: 1rem;">
-                                <div><label>Verifone API Key (Cloud)</label><input type="text" id="conf-vfone-key" placeholder="Bearer Token o API Key provista" class="form-input"></div>
-                                <div><label>Terminal ID (TID)</label><input type="text" id="conf-vfone-tid" placeholder="Ej. 12345678" class="form-input"></div>
-                                <div><label>Punto de Venta Integrado (MID)</label><input type="text" id="conf-vfone-mid" placeholder="Merchant ID" class="form-input"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div style="margin-top: 1.5rem; display:flex; justify-content:flex-end;">
-                        <button class="btn-success" onclick="window.saveSystemConfig()"><i class="fas fa-save"></i> Guardar Configuraciones</button>
-                    </div>
-                </section>
-
                 <!-- Messages View -->
                 <section id="view-messages" class="view-section">
                     <div style="display: flex; gap: 1rem; height: 80vh;">
                         <div class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column; flex: 3;">
-                            <h3>BuzÃƒÆ’Ã‚Â³n de Mensajes Interno</h3>
+                            <h3>BuzÃ³n de Mensajes Interno</h3>
                             <div id="chat-box" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.1); border-radius: 8px; padding: 1rem; margin-top: 1rem; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem; border: 1px solid var(--border-color);">
                                 <!-- Messages go here -->
                             </div>
@@ -648,10 +602,10 @@
                 <!-- Daily Pass View -->
                 <section id="view-daily-pass" class="view-section">
                     <div class="glass-panel" style="padding: 1.5rem; max-width: 500px; margin: 0 auto; margin-top: 2rem;">
-                        <h3 style="margin-bottom: 1.5rem; text-align: center;"><i class="fas fa-ticket-alt"></i> MÃƒÆ’Ã‚Â³dulo de Pase Diario</h3>
+                        <h3 style="margin-bottom: 1.5rem; text-align: center;"><i class="fas fa-ticket-alt"></i> MÃ³dulo de Pase Diario</h3>
                         
                         <div class="admin-only" style="background: rgba(0,0,0,0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
-                            <label style="font-weight: bold; color: var(--text-secondary); font-size: 0.9rem;">ConfiguraciÃƒÆ’Ã‚Â³n de Admin: Precio Base</label>
+                            <label style="font-weight: bold; color: var(--text-secondary); font-size: 0.9rem;">ConfiguraciÃ³n de Admin: Precio Base</label>
                             <div style="display: flex; gap: 0.5rem; align-items: center;">
                                 <input type="number" id="config-daily-price-view" step="0.01" style="width: 100px; margin: 0; padding: 0.3rem;">
                                 <button class="btn-primary" onclick="window.saveGymConfigView()" style="padding: 0.3rem 1rem;">Guardar Default</button>
@@ -669,7 +623,7 @@
                             
                             <div style="margin-bottom: 1.5rem;">
                                 <label style="display:block; margin-bottom: 0.2rem; font-weight:bold; font-size: 0.9rem;">2. O Ingrese Nuevo Nombre:</label>
-                                <input type="text" id="v-daily-name" placeholder="Ej. Juan PÃƒÆ’Ã‚Â©rez" style="width: 100%;" oninput="document.getElementById('v-daily-existing-client').value = '';">
+                                <input type="text" id="v-daily-name" placeholder="Ej. Juan PÃ©rez" style="width: 100%;" oninput="document.getElementById('v-daily-existing-client').value = '';">
                             </div>
                             
                             <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
@@ -677,11 +631,11 @@
                                 <input type="number" id="v-daily-price" placeholder="Precio ($)" min="0" step="0.01" required style="margin-bottom: 0; width: 100%; font-weight: bold; font-size: 1.5rem; text-align: center; color: var(--success-color);">
                             </div>
                             
-                            <label style="display:block; margin-bottom: 0.5rem; font-weight:bold; font-size: 0.9rem;">3. MÃƒÆ’Ã‚Â©todo de Pago:</label>
+                            <label style="display:block; margin-bottom: 0.5rem; font-weight:bold; font-size: 0.9rem;">3. MÃ©todo de Pago:</label>
                             <select id="v-daily-payment-method" required style="margin-bottom: 1.5rem; width: 100%;">
                                 <option value="Efectivo" selected>Pago en Efectivo</option>
                                 <option value="Tarjeta">Pago con Tarjeta</option>
-                                <option value="CrÃƒÆ’Ã‚Â©dito">Cuentas por cobrar (CrÃƒÆ’Ã‚Â©dito)</option>
+                                <option value="CrÃ©dito">Cuentas por cobrar (CrÃ©dito)</option>
                             </select>
                             
                             <button type="submit" class="btn-success" style="width: 100%; font-weight:bold; padding: 1rem; font-size: 1.1rem;"><i class="fas fa-check-circle"></i> Procesar y Cobrar</button>
@@ -698,13 +652,13 @@
     <div class="modal-overlay" id="modal-item-form">
         <div class="glass-panel modal-content">
             <div class="modal-header">
-                <h3 id="modal-item-title">Nuevo ArtÃƒÆ’Ã‚Â­culo</h3>
+                <h3 id="modal-item-title">Nuevo ArtÃ­culo</h3>
                 <i class="fas fa-times modal-close" onclick="closeModal('modal-item-form')"></i>
             </div>
             <form id="item-form">
                 <input type="hidden" id="item-id">
                 <input type="text" id="item-name" placeholder="Nombre del producto" required>
-                <textarea id="item-desc" placeholder="DescripciÃƒÆ’Ã‚Â³n" rows="2"></textarea>
+                <textarea id="item-desc" placeholder="DescripciÃ³n" rows="2"></textarea>
                 <div class="flex-row">
                     <input type="number" id="item-cost-price" placeholder="Costo ($)" step="0.01" required>
                     <input type="number" id="item-price" placeholder="Precio Venta ($)" step="0.01" required>
@@ -738,23 +692,19 @@
                     <input type="number" id="client-weight" placeholder="Peso (kg)" step="0.1" required>
                 </div>
                 <div class="flex-row" style="margin-top:1rem;">
-                    <input type="text" id="client-address" placeholder="DirecciÃƒÆ’Ã‚Â³n" required>
-                    <input type="tel" id="client-phone" placeholder="TelÃƒÆ’Ã‚Â©fono" required>
+                    <input type="text" id="client-address" placeholder="DirecciÃ³n" required>
+                    <input type="tel" id="client-phone" placeholder="TelÃ©fono" required>
                 </div>
                 <select id="client-plan" style="margin-top:1rem;" required>
                     <option value="" disabled selected>Seleccione el tipo de plan...</option>
-                    <option value="Mensual">MembresÃƒÆ’Ã‚Â­a Mensual</option>
-                    <option value="Quincenal">MembresÃƒÆ’Ã‚Â­a Quincenal</option>
-                    <option value="Diario">MembresÃƒÆ’Ã‚Â­a BÃƒÆ’Ã‚Â¡sica Pago Diario</option>
+                    <option value="Mensual">MembresÃ­a Mensual</option>
+                    <option value="Quincenal">MembresÃ­a Quincenal</option>
+                    <option value="Diario">MembresÃ­a BÃ¡sica Pago Diario</option>
                     <option value="Personalizado">Entrenamiento Personalizado</option>
                 </select>
                 <select id="client-trainer" style="margin-top:1rem;" required>
                     <!-- Populated by JS -->
                 </select>
-                <div class="role-entrenador-show" style="margin-top: 1rem;">
-                    <label style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Monto Acordado a Cobrar ($):</label>
-                    <input type="number" id="client-agreed-amount" placeholder="Monto cobrado al cliente" min="0" step="0.01" class="form-input" style="width: 100%;">
-                </div>
                 <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                     <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-client-form')">Cancelar</button>
                     <button type="submit" class="btn-success" style="flex:1;">Guardar</button>
@@ -773,7 +723,7 @@
             <form id="user-form">
                 <input type="hidden" id="user-id">
                 <input type="text" id="user-username" placeholder="Nombre de usuario" required>
-                <input type="password" id="user-password" placeholder="ContraseÃƒÆ’Ã‚Â±a nueva (Dejar vacÃƒÆ’Ã‚Â­o si no quieres cambiarla)" required>
+                <input type="password" id="user-password" placeholder="ContraseÃ±a nueva (Dejar vacÃ­o si no quieres cambiarla)" required>
                 <select id="user-role" required>
                     <option value="Staff">Staff / Entrenador (Solo ventas, inventario y clientes)</option>
                     <option value="Admin">Administrador (Acceso total)</option>
@@ -843,7 +793,7 @@
             <div id="notifications-list" style="overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; padding: 0.5rem 0;">
                 <!-- Notifications go here -->
             </div>
-            <button class="btn-primary" onclick="DB.ActivityDB.markAllRead(); closeModal('modal-notifications')" style="margin-top: 1rem; width: 100%;">Marcar todas como leÃƒÆ’Ã‚Â­das</button>
+            <button class="btn-primary" onclick="DB.ActivityDB.markAllRead(); closeModal('modal-notifications')" style="margin-top: 1rem; width: 100%;">Marcar todas como leÃ­das</button>
         </div>
     </div>
 
@@ -851,12 +801,12 @@
     <div class="modal-overlay" id="modal-otp-staff" style="z-index: 10001;">
         <div class="glass-panel modal-content" style="max-width: 400px; text-align: center;">
             <div class="modal-header">
-                <h3><i class="fas fa-key"></i> AutorizaciÃƒÆ’Ã‚Â³n Requerida</h3>
+                <h3><i class="fas fa-key"></i> AutorizaciÃ³n Requerida</h3>
                 <i class="fas fa-times modal-close" onclick="closeModal('modal-otp-staff')"></i>
             </div>
-            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">Esta transacciÃƒÆ’Ã‚Â³n a crÃƒÆ’Ã‚Â©dito requiere aprobaciÃƒÆ’Ã‚Â³n. Ingresa el cÃƒÆ’Ã‚Â³digo proporcionado por un Administrador.</p>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">Esta transacciÃ³n a crÃ©dito requiere aprobaciÃ³n. Ingresa el cÃ³digo proporcionado por un Administrador.</p>
             <form id="otp-staff-form">
-                <input type="text" id="otp-input" placeholder="CÃƒÆ’Ã‚Â³digo numÃƒÆ’Ã‚Â©rico" required style="margin-bottom: 1rem; text-align: center; font-size: 1.5rem; letter-spacing: 5px;">
+                <input type="text" id="otp-input" placeholder="CÃ³digo numÃ©rico" required style="margin-bottom: 1rem; text-align: center; font-size: 1.5rem; letter-spacing: 5px;">
                 <button type="submit" class="btn-primary" style="width: 100%;">Verificar y Continuar</button>
             </form>
         </div>
@@ -866,7 +816,7 @@
     <div class="modal-overlay" id="modal-credit-info" style="z-index: 10000;">
         <div class="glass-panel modal-content" style="max-width: 450px;">
             <div class="modal-header">
-                <h3><i class="fas fa-hand-holding-usd"></i> Detalles del CrÃƒÆ’Ã‚Â©dito</h3>
+                <h3><i class="fas fa-hand-holding-usd"></i> Detalles del CrÃ©dito</h3>
                 <i class="fas fa-times modal-close" onclick="closeModal('modal-credit-info')"></i>
             </div>
             <form id="credit-info-form">
@@ -885,7 +835,7 @@
                     <label style="display:block; margin-bottom: 0.2rem; font-weight:bold;">3. Fecha Acordada de Cobro:</label>
                     <input type="date" id="credit-date" required style="width: 100%;">
                 </div>
-                <button type="submit" class="btn-primary" style="width: 100%;">Confirmar CrÃƒÆ’Ã‚Â©dito</button>
+                <button type="submit" class="btn-primary" style="width: 100%;">Confirmar CrÃ©dito</button>
             </form>
         </div>
     </div>
@@ -894,7 +844,7 @@
     <div class="modal-overlay" id="modal-process-receivable">
         <div class="glass-panel modal-content" style="max-width: 400px; text-align: center;">
             <div class="modal-header">
-                <h3>Procesar Pago de CrÃƒÆ’Ã‚Â©dito</h3>
+                <h3>Procesar Pago de CrÃ©dito</h3>
                 <i class="fas fa-times modal-close" onclick="closeModal('modal-process-receivable')"></i>
             </div>
             <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">Confirmar pago de la cuenta de <strong id="rec-client-name"></strong> por <strong id="rec-amount"></strong>.</p>
@@ -902,8 +852,8 @@
                 <input type="hidden" id="rec-id">
                 <select id="rec-status" required style="margin-bottom: 1rem; width: 100%;">
                     <option value="" disabled selected>Estado del Pago...</option>
-                    <option value="Pagado a tiempo">PagÃƒÆ’Ã‚Â³ a Tiempo</option>
-                    <option value="Pagado con atraso">PagÃƒÆ’Ã‚Â³ con Atraso</option>
+                    <option value="Pagado a tiempo">PagÃ³ a Tiempo</option>
+                    <option value="Pagado con atraso">PagÃ³ con Atraso</option>
                 </select>
                 <div style="display: flex; gap: 1rem;">
                     <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-process-receivable')">Cancelar</button>
@@ -917,15 +867,15 @@
     <div class="modal-overlay" id="modal-auth-confirm" style="z-index: 10000;">
         <div class="glass-panel modal-content" style="max-width: 400px; text-align: center;">
             <div class="modal-header">
-                <h3><i class="fas fa-lock"></i> Autorizar AcciÃƒÆ’Ã‚Â³n</h3>
+                <h3><i class="fas fa-lock"></i> Autorizar AcciÃ³n</h3>
                 <i class="fas fa-times modal-close" onclick="closeModal('modal-auth-confirm')"></i>
             </div>
-            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">Por favor selecciona tu usuario e ingresa tu contraseÃƒÆ’Ã‚Â±a para firmar el movimiento.</p>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">Por favor selecciona tu usuario e ingresa tu contraseÃ±a para firmar el movimiento.</p>
             <form id="auth-confirm-form">
                 <select id="auth-confirm-user" required style="margin-bottom: 1rem;">
                     <!-- Populated by JS -->
                 </select>
-                <input type="password" id="auth-confirm-pass" placeholder="ContraseÃƒÆ’Ã‚Â±a" required style="margin-bottom: 1rem;">
+                <input type="password" id="auth-confirm-pass" placeholder="ContraseÃ±a" required style="margin-bottom: 1rem;">
                 <button type="submit" class="btn-primary" style="width: 100%;">Confirmar y Procesar</button>
             </form>
         </div>
@@ -935,13 +885,13 @@
     <div class="modal-overlay" id="modal-extension-form">
         <div class="glass-panel modal-content" style="max-width: 400px; text-align: center;">
             <div class="modal-header">
-                <h3>Otorgar PrÃƒÆ’Ã‚Â³rroga</h3>
+                <h3>Otorgar PrÃ³rroga</h3>
                 <i class="fas fa-times modal-close" onclick="closeModal('modal-extension-form')"></i>
             </div>
-            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">Otorgue de 1 a 15 dÃƒÆ’Ã‚Â­as extra para el cliente <strong id="ext-client-name"></strong>.</p>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">Otorgue de 1 a 15 dÃ­as extra para el cliente <strong id="ext-client-name"></strong>.</p>
             <form id="extension-form">
                 <input type="hidden" id="ext-client-id">
-                <input type="number" id="ext-days" placeholder="DÃƒÆ’Ã‚Â­as (1-15)" min="1" max="15" required style="margin-bottom: 1rem; width: 100%;">
+                <input type="number" id="ext-days" placeholder="DÃ­as (1-15)" min="1" max="15" required style="margin-bottom: 1rem; width: 100%;">
                 <div style="display: flex; gap: 1rem;">
                     <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-extension-form')">Cancelar</button>
                     <button type="submit" class="btn-success" style="flex:1;">Guardar</button>
@@ -987,7 +937,7 @@
                 <span>Total a Cobrar:</span>
                 <span id="sale-confirm-total">$0.00</span>
             </div>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">MÃƒÆ’Ã‚Â©todo: <strong id="sale-confirm-method"></strong></p>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">MÃ©todo: <strong id="sale-confirm-method"></strong></p>
             <div style="display: flex; gap: 1rem;">
                 <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-sale-confirm')">Cancelar</button>
                 <button type="button" class="btn-success" style="flex:1;" id="btn-final-process-sale"><i class="fas fa-check"></i> Proceder a Pagar</button>
@@ -999,19 +949,19 @@
     <div class="modal-overlay" id="modal-renew-membership" style="z-index: 10000;">
         <div class="glass-panel modal-content" style="max-width: 400px; text-align: center;">
             <div class="modal-header">
-                <h3><i class="fas fa-money-bill-wave"></i> Pagar MembresÃƒÆ’Ã‚Â­a</h3>
+                <h3><i class="fas fa-money-bill-wave"></i> Pagar MembresÃ­a</h3>
                 <i class="fas fa-times modal-close" onclick="closeModal('modal-renew-membership')"></i>
             </div>
-            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">RenovaciÃƒÆ’Ã‚Â³n de <strong id="renew-client-name"></strong>.</p>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">RenovaciÃ³n de <strong id="renew-client-name"></strong>.</p>
             <form id="renew-membership-form">
                 <input type="hidden" id="renew-client-id">
                 <input type="hidden" id="renew-plan-type">
                 <input type="hidden" id="renew-plan-days">
                 <div style="margin-bottom: 1rem; text-align: left;">
-                    <label style="font-size: 0.85rem; color: var(--text-secondary); display:block; margin-bottom:0.25rem;">InformaciÃƒÆ’Ã‚Â³n del Plan:</label>
+                    <label style="font-size: 0.85rem; color: var(--text-secondary); display:block; margin-bottom:0.25rem;">InformaciÃ³n del Plan:</label>
                     <div style="background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 4px; font-size: 0.9rem;">
                         Plan: <strong id="renew-plan-name-display" style="color: var(--primary-color);"></strong><br>
-                        Se sumarÃƒÆ’Ã‚Â¡n: <strong id="renew-plan-days-display">0 dÃƒÆ’Ã‚Â­as</strong>
+                        Se sumarÃ¡n: <strong id="renew-plan-days-display">0 dÃ­as</strong>
                     </div>
                 </div>
                 <div style="margin-bottom: 1rem; text-align: left;">
@@ -1019,7 +969,7 @@
                     <input type="number" id="renew-price" placeholder="Monto" min="0" step="0.01" required style="width: 100%;">
                 </div>
                 <div style="margin-bottom: 1.5rem; text-align: left;">
-                    <label style="font-size: 0.85rem; color: var(--text-secondary); display:block; margin-bottom:0.25rem;">MÃƒÆ’Ã‚Â©todo de Pago:</label>
+                    <label style="font-size: 0.85rem; color: var(--text-secondary); display:block; margin-bottom:0.25rem;">MÃ©todo de Pago:</label>
                     <select id="renew-payment-method" required style="width: 100%;">
                         <option value="Efectivo" selected>Efectivo</option>
                         <option value="Tarjeta">Tarjeta</option>
@@ -1042,7 +992,7 @@
                 <!-- Message text -->
             </div>
             <div style="display: flex; gap: 1rem;">
-                <button type="button" class="btn-primary" style="flex: 1; padding: 1rem; font-size: 1.1rem; font-weight: bold;" id="btn-dm-read">ÃƒÂ¢Ã…â€œÃ¢â‚¬Â Entendido / LeÃƒÆ’Ã‚Â­do</button>
+                <button type="button" class="btn-primary" style="flex: 1; padding: 1rem; font-size: 1.1rem; font-weight: bold;" id="btn-dm-read">âœ” Entendido / LeÃ­do</button>
             </div>
             <div id="dm-reply-section" style="margin-top: 1rem;">
                 <small style="color: var(--text-secondary); cursor: pointer; text-decoration: underline;" onclick="document.getElementById('nav-messages').click(); closeModal('modal-direct-message');">Ir al Chat para Responder</small>
@@ -1052,12 +1002,10 @@
 
     <!-- Global CSS for Staff Role Restrictions -->
     <style>
-        .role-staff .admin-only, .role-entrenador .admin-only { display: none !important; } .role-entrenador [data-target="sales"], .role-entrenador [data-target="inventory"], .role-entrenador [data-target="expenses"], .role-entrenador [data-target="daily-pass"], .role-entrenador [data-target="receivables"], .role-entrenador #profitability-semaphore { display: none !important; } body.role-staff .admin-only {
+        body.role-staff .admin-only {
             display: none !important;
         }
-    .role-entrenador-show { display: none; }
-body.role-entrenador .role-entrenador-show { display: block !important; }
-</style>
+    </style>
 
     <!-- Expense Form Modal -->
     <div class="modal-overlay" id="modal-expense-form">
@@ -1066,7 +1014,7 @@ body.role-entrenador .role-entrenador-show { display: block !important; }
                 <h3>Registrar Gasto del Gym</h3>
                 <i class="fas fa-times modal-close" onclick="closeModal('modal-expense-form')"></i>
             </div>
-            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom:1rem;">Anota aquÃƒÆ’Ã‚Â­ luz, agua, limpieza, renta, equipo u otros gastos operativos.</p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom:1rem;">Anota aquÃ­ luz, agua, limpieza, renta, equipo u otros gastos operativos.</p>
             <form id="expense-form">
                 <input type="text" id="expense-desc" placeholder="Concepto del gasto (Ej. Pago de Luz)" required>
                 <div class="flex-row" style="margin-top:1rem;">
@@ -1091,7 +1039,7 @@ body.role-entrenador .role-entrenador-show { display: block !important; }
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('PWA Service Worker registrado con ÃƒÆ’Ã‚Â©xito', reg))
+                .then(reg => console.log('PWA Service Worker registrado con Ã©xito', reg))
                 .catch(err => console.log('Error registrando Service Worker', err));
             });
         }
