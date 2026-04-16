@@ -1,4 +1,4 @@
-﻿const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyDToM4s0ynM9fe65j8qD_qEchWDZSkAffk",
   authDomain: "natjafitness.firebaseapp.com",
   projectId: "natjafitness",
@@ -23,17 +23,10 @@ let localData = {
     gym_clients: [],
     gym_activity: [],
     gym_messages: [],
-    gym_receivables: [],
-    gym_expenses: []
+    gym_receivables: []
 };
 
-
 // Listeners for realtime update
-db.collection('gym_config').doc('main').onSnapshot(snap => {
-    localData.gym_config = snap.exists ? snap.data() : {};
-    if (window.renderConfig) window.renderConfig();
-});
-
 db.collection('gym_users').onSnapshot(snap => {
     localData.gym_users = snap.docs.map(doc => doc.data());
     // Seed admin if empty
@@ -80,7 +73,7 @@ db.collection('gym_clients').onSnapshot(snap => {
     if(window.renderClients && document.getElementById('view-clients') && document.getElementById('view-clients').classList.contains('active')) {
         window.renderClients();
         const activeCat = document.getElementById('client-category-title') ? document.getElementById('client-category-title').innerText.replace('Visualizando: ', '') : '';
-        if(activeCat && activeCat !== 'CategorÃ­a') {
+        if(activeCat && activeCat !== 'Categoría') {
             window.showClientsCategory(activeCat);
         }
     }
@@ -93,7 +86,7 @@ db.collection('gym_activity').onSnapshot(snap => {
     if(!isInitialActivityLoad && window.triggerDeviceNotification) {
         snap.docChanges().forEach(change => {
             if(change.type === 'added') {
-                window.triggerDeviceNotification("ðŸ”” ActualizaciÃ³n del Gym", change.doc.data().action);
+                window.triggerDeviceNotification("🔔 Actualización del Gym", change.doc.data().action);
             }
         });
     }
@@ -115,19 +108,6 @@ db.collection('gym_receivables').onSnapshot(snap => {
     }
     if(window.renderDashboard && document.getElementById('view-dashboard') && document.getElementById('view-dashboard').classList.contains('active')) {
         window.renderDashboard();
-    }
-});
-
-db.collection('gym_expenses').onSnapshot(snap => {
-    localData.gym_expenses = snap.docs.map(doc => doc.data());
-    if(window.renderExpenses && document.getElementById('view-expenses') && document.getElementById('view-expenses').classList.contains('active')) {
-        window.renderExpenses();
-    }
-    if(window.renderDashboard && document.getElementById('view-dashboard') && document.getElementById('view-dashboard').classList.contains('active')) {
-        window.renderDashboard();
-    }
-    if(window.renderReports && document.getElementById('view-reports') && document.getElementById('view-reports').classList.contains('active')) {
-        window.renderReports();
     }
 });
 
@@ -190,7 +170,7 @@ const InventoryDB = {
     },
     adjustStock: (id, amount, userId, type) => {
         const item = InventoryDB.getById(id);
-        if (!item) throw new Error("ArtÃ­culo no encontrado");
+        if (!item) throw new Error("Artículo no encontrado");
         
         const newQty = Number(item.quantity) + Number(amount);
         if (newQty < 0) throw new Error("Stock insuficiente");
@@ -224,7 +204,7 @@ const SalesDB = {
         
         for (const cartItem of cartItems) {
             const item = InventoryDB.getById(cartItem.id);
-            if (!item) throw new Error(`El artÃ­culo ${cartItem.name} no se encuentra.`);
+            if (!item) throw new Error(`El artículo ${cartItem.name} no se encuentra.`);
             if (item.quantity < cartItem.qty) throw new Error(`Stock insuficiente para ${item.name}.`);
         }
         
@@ -266,7 +246,7 @@ const SalesDB = {
         const saleRecord = {
             id: `MEMBRESIA-${generateId().substring(0,5).toUpperCase()}`,
             user_id: userId,
-            items: [{ name: `RenovaciÃ³n: ${planType} - ${clientName}`, qty: 1 }],
+            items: [{ name: `Renovación: ${planType} - ${clientName}`, qty: 1 }],
             total_cost: 0,
             total_amount: Number(price),
             profit: Number(price),
@@ -392,27 +372,9 @@ const MessagesDB = {
     }
 };
 
-const ExpensesDB = {
-    getAll: () => localData.gym_expenses,
-    add: (desc, amount, userId) => {
-        const expense = {
-            id: `EXP-${generateId().substring(0,8).toUpperCase()}`,
-            description: desc,
-            amount: Number(amount),
-            date: new Date().toISOString(),
-            user_id: userId
-        };
-        db.collection('gym_expenses').doc(expense.id).set(expense);
-        return expense;
-    },
-    remove: (id) => {
-        db.collection('gym_expenses').doc(id).delete();
-    }
-};
-
 const SystemDB = {
     factoryReset: async () => {
-        const collections = ['gym_inventory', 'gym_activity', 'gym_clients', 'gym_sales', 'gym_transactions', 'gym_messages', 'gym_receivables', 'gym_expenses'];
+        const collections = ['gym_inventory', 'gym_activity', 'gym_clients', 'gym_sales', 'gym_transactions', 'gym_messages', 'gym_receivables'];
         for(let col of collections) {
             const snap = await db.collection(col).get();
             const batch = db.batch();
@@ -433,7 +395,5 @@ window.DB = {
     ReceivablesDB,
     ClientsDB,
     ActivityDB,
-    MessagesDB,
-    ExpensesDB
+    MessagesDB
 };
-const ConfigDB = { get: () => localData.gym_config || {}, update: (updates) => { db.collection('gym_config').doc('main').set(updates, {merge: true}); } }; window.DB.ConfigDB = ConfigDB;
