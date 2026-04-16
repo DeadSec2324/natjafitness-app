@@ -161,7 +161,7 @@ function loadView(viewName) {
             viewName === 'messages' ? 'Mensajes' :
             viewName === 'receivables' ? 'Cuentas por Cobrar' :
             viewName === 'expenses' ? 'Presupuesto y Gastos' :
-            viewName === 'reports' ? 'AnÃƒÂ¡lisis Financiero' :
+            viewName === 'reports' ? 'AnÃƒÆ’Ã‚Â¡lisis Financiero' :
             'Usuarios';
     }
         
@@ -198,7 +198,7 @@ function setupModals() {
         btnAddItem.addEventListener('click', () => {
             document.getElementById('item-form').reset();
             document.getElementById('item-id').value = '';
-            document.getElementById('modal-item-title').innerText = 'Nuevo ArtÃƒÂ­culo';
+            document.getElementById('modal-item-title').innerText = 'Nuevo ArtÃƒÆ’Ã‚Â­culo';
             document.getElementById('modal-item-form').classList.add('active');
         });
     }
@@ -293,17 +293,17 @@ function setupForms() {
             
             if (id) {
                 DB.InventoryDB.update(id, item);
-                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `EditÃƒÂ³ el producto ${item.name}`);
+                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `EditÃƒÆ’Ã‚Â³ el producto ${item.name}`);
             } else {
                 DB.InventoryDB.add(item);
-                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `AÃƒÂ±adiÃƒÂ³ el producto nuevo ${item.name}`);
+                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `AÃƒÆ’Ã‚Â±adiÃƒÆ’Ã‚Â³ el producto nuevo ${item.name}`);
             }
             closeModal('modal-item-form');
             renderInventory();
         });
     }
 
-    // Modal de IntercepciÃƒÂ³n de AutorizaciÃƒÂ³n
+    // Modal de IntercepciÃƒÆ’Ã‚Â³n de AutorizaciÃƒÆ’Ã‚Â³n
     const authConfirmForm = document.getElementById('auth-confirm-form');
     if(authConfirmForm) {
         authConfirmForm.addEventListener('submit', (e) => {
@@ -326,7 +326,7 @@ function setupForms() {
                 }, 500);
 
             } else {
-                alert("ContraseÃƒÂ±a incorrecta. Intenta de nuevo.");
+                alert("ContraseÃƒÆ’Ã‚Â±a incorrecta. Intenta de nuevo.");
             }
         });
     }
@@ -373,7 +373,7 @@ function setupForms() {
                 if (id) {
                     DB.UserDB.update(id, usrData);
                 } else {
-                    if(!pwd) throw new Error("La contraseÃƒÂ±a es obligatoria para usuarios nuevos");
+                    if(!pwd) throw new Error("La contraseÃƒÆ’Ã‚Â±a es obligatoria para usuarios nuevos");
                     DB.UserDB.add(usrData);
                 }
                 closeModal('modal-user-form');
@@ -417,10 +417,10 @@ function setupForms() {
             requireAuth((authUser) => {
                 if (id) {
                     DB.ClientsDB.update(id, client);
-                    if(authUser.role === 'Staff') DB.ActivityDB.log(authUser.username, `EditÃƒÂ³ al cliente ${client.name} ${client.surname}`);
+                    if(authUser.role === 'Staff') DB.ActivityDB.log(authUser.username, `EditÃƒÆ’Ã‚Â³ al cliente ${client.name} ${client.surname}`);
                 } else {
                     DB.ClientsDB.add(client);
-                    if(authUser.role === 'Staff') DB.ActivityDB.log(authUser.username, `RegistrÃƒÂ³ al nuevo cliente ${client.name} ${client.surname}`);
+                    if(authUser.role === 'Staff') DB.ActivityDB.log(authUser.username, `RegistrÃƒÆ’Ã‚Â³ al nuevo cliente ${client.name} ${client.surname}`);
                 }
                 closeModal('modal-client-form');
                 renderClients();
@@ -443,7 +443,7 @@ function setupForms() {
                 DB.InventoryDB.adjustStock(id, amount, currentUser.id, type);
                 if(currentUser.role === 'Staff') {
                     const item = DB.InventoryDB.getById(id);
-                    DB.ActivityDB.log(currentUser.username, `RegistrÃƒÂ³ una ${type === 'IN' ? 'entrada' : 'salida'} manual de ${Math.abs(amount)} unidades en ${item.name}`);
+                    DB.ActivityDB.log(currentUser.username, `RegistrÃƒÆ’Ã‚Â³ una ${type === 'IN' ? 'entrada' : 'salida'} manual de ${Math.abs(amount)} unidades en ${item.name}`);
                 }
                 closeModal('modal-stock-form');
                 renderInventory();
@@ -465,14 +465,14 @@ function setupForms() {
             if(!item) return;
             
             if(item.quantity < qty) {
-                alert(`OUT OF STOCK!\n\nNo hay suficiente inventario de "${item.name}".\nPor favor, solicita a un Administrador que ingrese mÃƒÂ¡s stock para continuar.`);
+                alert(`OUT OF STOCK!\n\nNo hay suficiente inventario de "${item.name}".\nPor favor, solicita a un Administrador que ingrese mÃƒÆ’Ã‚Â¡s stock para continuar.`);
                 return;
             }
             
             const existing = cart.find(c => c.id === itemId);
             if(existing) {
                 if (item.quantity < existing.qty + qty) {
-                    alert(`OUT OF STOCK!\n\nNo hay suficiente inventario de "${item.name}".\nPor favor, solicita a un Administrador que ingrese mÃƒÂ¡s stock para continuar.`);
+                    alert(`OUT OF STOCK!\n\nNo hay suficiente inventario de "${item.name}".\nPor favor, solicita a un Administrador que ingrese mÃƒÆ’Ã‚Â¡s stock para continuar.`);
                     return;
                 }
                 existing.qty += qty;
@@ -496,12 +496,12 @@ function setupForms() {
     if (btnProcess) {
         btnProcess.addEventListener('click', () => {
             if(cart.length === 0) {
-                alert("El carrito estÃƒÂ¡ vacÃƒÂ­o");
+                alert("El carrito estÃƒÆ’Ã‚Â¡ vacÃƒÆ’Ã‚Â­o");
                 return;
             }
             
             const paymentMethod = document.getElementById('sale-payment-method').value || 'Efectivo';
-            if (paymentMethod === 'CrÃƒÂ©dito') {
+            if (paymentMethod === 'CrÃƒÆ’Ã‚Â©dito') {
                 window.pendingCreditData = {
                     isDailyPass: false,
                     cartClone: [...cart],
@@ -536,9 +536,9 @@ function setupForms() {
                     DB.SalesDB.processSale(authUser.id, cart, passMethodForNormal);
                     
                     const itemNames = cart.map(c => `${c.qty} ${c.name}`).join(', ');
-                    DB.ActivityDB.log(authUser.username, `ProcesÃƒÂ³ venta de: ${itemNames} (${paymentMethod})`);
+                    DB.ActivityDB.log(authUser.username, `ProcesÃƒÆ’Ã‚Â³ venta de: ${itemNames} (${paymentMethod})`);
                     
-                    alert("Venta procesada con ÃƒÂ©xito");
+                    alert("Venta procesada con ÃƒÆ’Ã‚Â©xito");
                     cart = [];
                     renderCart();
                     document.getElementById('btn-print-invoice').disabled = false;
@@ -546,7 +546,7 @@ function setupForms() {
                     populateSalesSelect();
                 } catch (error) {
                     if(error.message.includes("Stock insuficiente")) {
-                        alert(`OUT OF STOCK!\n\nEl sistema detectÃƒÂ³ que no hay inventario suficiente para procesar la venta.\nPor favor, solicita a un Administrador que ajuste el stock antes de continuar.`);
+                        alert(`OUT OF STOCK!\n\nEl sistema detectÃƒÆ’Ã‚Â³ que no hay inventario suficiente para procesar la venta.\nPor favor, solicita a un Administrador que ajuste el stock antes de continuar.`);
                     } else {
                         alert("Error al procesar: " + error.message);
                     }
@@ -574,8 +574,8 @@ function setupForms() {
                 if(client) {
                     const currentExt = client.extension_days || 0;
                     DB.ClientsDB.update(id, { extension_days: currentExt + days });
-                    if(currentUser) DB.ActivityDB.log(currentUser.username, `OtorgÃƒÂ³ ${days} dÃƒÂ­as de prÃƒÂ³rroga a ${client.name} ${client.surname}`);
-                    alert(`PrÃƒÂ³rroga de ${days} dÃƒÂ­as asignada con ÃƒÂ©xito a ${client.name}.`);
+                    if(currentUser) DB.ActivityDB.log(currentUser.username, `OtorgÃƒÆ’Ã‚Â³ ${days} dÃƒÆ’Ã‚Â­as de prÃƒÆ’Ã‚Â³rroga a ${client.name} ${client.surname}`);
+                    alert(`PrÃƒÆ’Ã‚Â³rroga de ${days} dÃƒÆ’Ã‚Â­as asignada con ÃƒÆ’Ã‚Â©xito a ${client.name}.`);
                     closeModal('modal-extension-form');
                     renderClients();
                 }
@@ -595,8 +595,8 @@ function setupForms() {
             
             requireAuth((authUser) => {
                 DB.SalesDB.registerDailyPass(authUser.id, clientName, price, method);
-                if(authUser.role === 'Staff' || authUser.role === 'Admin') DB.ActivityDB.log(authUser.username, `CobrÃƒÂ³ Acceso Diario de $${price.toFixed(2)} a ${clientName} (${method})`);
-                alert(`Pase procesado con ÃƒÂ©xito para ${clientName}.`);
+                if(authUser.role === 'Staff' || authUser.role === 'Admin') DB.ActivityDB.log(authUser.username, `CobrÃƒÆ’Ã‚Â³ Acceso Diario de $${price.toFixed(2)} a ${clientName} (${method})`);
+                alert(`Pase procesado con ÃƒÆ’Ã‚Â©xito para ${clientName}.`);
                 closeModal('modal-daily-pass');
                 
                 if(document.getElementById('view-dashboard') && document.getElementById('view-dashboard').classList.contains('active')) renderDashboard();
@@ -632,7 +632,7 @@ function setupForms() {
                         
                         // Register Sales & Activity
                         DB.SalesDB.registerMembershipPayment(authUser.id, clientName, planType, price, method);
-                        DB.ActivityDB.log(authUser.username, `RegistrÃƒÂ³ pago de membresÃƒÂ­a de $${price.toFixed(2)} para ${clientName}`);
+                        DB.ActivityDB.log(authUser.username, `RegistrÃƒÆ’Ã‚Â³ pago de membresÃƒÆ’Ã‚Â­a de $${price.toFixed(2)} para ${clientName}`);
                         
                         closeModal('modal-renew-membership');
                         alert(`Pago registrado exitosamente. La nueva fecha de cobro ha sido actualizada.`);
@@ -640,20 +640,20 @@ function setupForms() {
                         renderDashboard();
                     }
                 } catch(error) {
-                    alert("Error procesando pago de membresÃƒÂ­a: " + error.message);
+                    alert("Error procesando pago de membresÃƒÆ’Ã‚Â­a: " + error.message);
                 }
             });
         });
     }
     
-    // CrÃƒÂ©ditos Events
+    // CrÃƒÆ’Ã‚Â©ditos Events
     document.getElementById('btn-generate-otp')?.addEventListener('click', () => {
         const code = Math.floor(1000 + Math.random() * 9000).toString();
         const adminUser = DB.UserDB.getAll().find(u => u.username === 'admin');
         if(adminUser) {
             DB.UserDB.update(adminUser.id, { active_otp: code });
             document.getElementById('current-otp-display').innerText = code;
-            alert("CÃƒÂ³digo OTP generado con ÃƒÂ©xito. VÃƒÂ¡lido para 1 uso.");
+            alert("CÃƒÆ’Ã‚Â³digo OTP generado con ÃƒÆ’Ã‚Â©xito. VÃƒÆ’Ã‚Â¡lido para 1 uso.");
         }
     });
 
@@ -671,7 +671,7 @@ function setupForms() {
                 document.getElementById('otp-input').value = '';
                 window.openCreditInfoModal();
             } else {
-                alert('CÃƒÂ³digo incorrecto o ya utilizado.');
+                alert('CÃƒÆ’Ã‚Â³digo incorrecto o ya utilizado.');
             }
         });
     }
@@ -719,8 +719,8 @@ function setupForms() {
                     user_id: currentUser ? currentUser.username : 'Sistema'
                 });
                 
-                DB.ActivityDB.log(currentUser ? currentUser.username : 'Sistema', `AprobÃƒÂ³ Venta a CrÃƒÂ©dito por $${parseFloat(pd.total_amount).toFixed(2)} a ${clientName}`);
-                alert('CrÃƒÂ©dito otorgado exitosamente.');
+                DB.ActivityDB.log(currentUser ? currentUser.username : 'Sistema', `AprobÃƒÆ’Ã‚Â³ Venta a CrÃƒÆ’Ã‚Â©dito por $${parseFloat(pd.total_amount).toFixed(2)} a ${clientName}`);
+                alert('CrÃƒÆ’Ã‚Â©dito otorgado exitosamente.');
                 closeModal('modal-credit-info');
                 
                 if(document.getElementById('view-daily-pass') && document.getElementById('view-daily-pass').classList.contains('active')) {
@@ -731,7 +731,7 @@ function setupForms() {
                 window.pendingCreditData = null;
                 if (currentUser && currentUser.role === 'Admin') renderDashboard();
             } catch (err) {
-                alert("Error al procesar el crÃƒÂ©dito: " + err.message);
+                alert("Error al procesar el crÃƒÆ’Ã‚Â©dito: " + err.message);
             }
         });
     }
@@ -749,7 +749,7 @@ function setupForms() {
                 const saleRecord = {
                      id: `PAGO-CREDITO-${Date.now().toString(36).substring(0,5).toUpperCase()}`,
                      user_id: currentUser ? currentUser.username : 'Admin',
-                     items: [{ name: `CancelaciÃƒÂ³n Deuda: ${r.client_name}`, qty: 1 }],
+                     items: [{ name: `CancelaciÃƒÆ’Ã‚Â³n Deuda: ${r.client_name}`, qty: 1 }],
                      total_cost: 0,
                      total_amount: r.total_amount,
                      profit: r.total_amount,
@@ -757,12 +757,12 @@ function setupForms() {
                      date: new Date().toISOString()
                 };
                 db.collection('gym_sales').doc(saleRecord.id).set(saleRecord);
-                DB.ActivityDB.log(currentUser.username, `CobrÃƒÂ³ Cuenta de $${parseFloat(r.total_amount).toFixed(2)} a ${r.client_name} (${status})`);
+                DB.ActivityDB.log(currentUser.username, `CobrÃƒÆ’Ã‚Â³ Cuenta de $${parseFloat(r.total_amount).toFixed(2)} a ${r.client_name} (${status})`);
                 
                 closeModal('modal-process-receivable');
                 if(window.renderReceivables) window.renderReceivables();
                 renderDashboard();
-                alert("Cobro procesado e ingresado a las transacciones del dÃƒÂ­a.");
+                alert("Cobro procesado e ingresado a las transacciones del dÃƒÆ’Ã‚Â­a.");
             }
         });
     }
@@ -918,8 +918,8 @@ function renderDashboard() {
             if (dueReceivables.length > 0) {
                 window.hasNotifiedReceivables = true;
                 setTimeout(() => {
-                    alert(`Ã‚Â¡AtenciÃƒÂ³n! Tienes ${dueReceivables.length} cuenta(s) por cobrar con fecha de cobro vencida o para el dÃƒÂ­a de HOY.`);
-                    if (window.triggerDeviceNotification) window.triggerDeviceNotification("Cuentas Pendientes", "Hay clientes con deudas por cobrar el dÃƒÂ­a de hoy.");
+                    alert(`Ãƒâ€šÃ‚Â¡AtenciÃƒÆ’Ã‚Â³n! Tienes ${dueReceivables.length} cuenta(s) por cobrar con fecha de cobro vencida o para el dÃƒÆ’Ã‚Â­a de HOY.`);
+                    if (window.triggerDeviceNotification) window.triggerDeviceNotification("Cuentas Pendientes", "Hay clientes con deudas por cobrar el dÃƒÆ’Ã‚Â­a de hoy.");
                 }, 1000);
             }
         }
@@ -1002,7 +1002,7 @@ function renderInventory() {
     tbody.innerHTML = '';
     
     if(inv.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay artÃƒÂ­culos. AÃƒÂ±ade uno.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay artÃƒÆ’Ã‚Â­culos. AÃƒÆ’Ã‚Â±ade uno.</td></tr>';
         return;
     }
     
@@ -1034,7 +1034,7 @@ function renderSales() {
 function populateSalesSelect() {
     const select = document.getElementById('sale-item-select');
     if(!select) return;
-    select.innerHTML = '<option value="">Seleccione un artÃƒÂ­culo...</option>';
+    select.innerHTML = '<option value="">Seleccione un artÃƒÆ’Ã‚Â­culo...</option>';
     DB.InventoryDB.getAll().forEach(i => {
         if(i.quantity > 0) {
             select.innerHTML += `<option value="${i.id}">${i.name} ($${parseFloat(i.price).toFixed(2)} - Stock: ${i.quantity})</option>`;
@@ -1049,7 +1049,7 @@ function renderCart() {
     let total = 0;
     
     if(cart.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">El carrito estÃƒÂ¡ vacÃƒÂ­o</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">El carrito estÃƒÆ’Ã‚Â¡ vacÃƒÆ’Ã‚Â­o</td></tr>';
     } else {
         cart.forEach((c, index) => {
             total += c.subtotal;
@@ -1106,13 +1106,13 @@ function renderUsers() {
             <tr>
                 <td><span class="status-dot ${statusClass}"></span> <strong>${u.username}</strong></td>
                 <td>${u.role} ${priceTag}</td>
-                <td><small style="color:var(--text-secondary)">1Ã‚Âº Entrada Hoy: ${firstLog}<br>ÃƒÅ¡lt. AcciÃƒÂ³n: ${lastLog}</small></td>
+                <td><small style="color:var(--text-secondary)">1Ãƒâ€šÃ‚Âº Entrada Hoy: ${firstLog}<br>ÃƒÆ’Ã…Â¡lt. AcciÃƒÆ’Ã‚Â³n: ${lastLog}</small></td>
                 <td class="action-btns">
                     ${u.username !== 'admin' ? `
                         <button class="btn-icon" style="color: var(--primary-color)" onclick="editUser('${u.id}')" title="Editar"><i class="fas fa-edit"></i></button>
                         <button class="btn-icon" style="color: var(--danger-color)" onclick="deleteUser('${u.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>
                     ` : `
-                        <button class="btn-icon" style="color: var(--primary-color)" onclick="editUser('${u.id}')" title="Editar ContraseÃƒÂ±a"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" style="color: var(--primary-color)" onclick="editUser('${u.id}')" title="Editar ContraseÃƒÆ’Ã‚Â±a"><i class="fas fa-edit"></i></button>
                     `}
                 </td>
             </tr>
@@ -1204,7 +1204,7 @@ window.checkDirectMessages = function(snap) {
                     
                     openModal('modal-direct-message');
                     if(window.triggerDeviceNotification) {
-                        window.triggerDeviceNotification("Ã‚Â¡Urgente!", "Mensaje de " + msg.sender);
+                        window.triggerDeviceNotification("Ãƒâ€šÃ‚Â¡Urgente!", "Mensaje de " + msg.sender);
                     }
                 }
             }
@@ -1219,16 +1219,16 @@ window.updateOnlineUsersPanel = function() {
         onlineList.innerHTML = '';
         
         const currentSelected = recipientSelect.value;
-        const recipientOptions = ['<option value="ALL">Ã°Å¸Å’Â Para: Todos</option>'];
+        const recipientOptions = ['<option value="ALL">ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â Para: Todos</option>'];
         
         DB.UserDB.getAll().forEach(u => {
             if(u.username !== currentUser.username) {
-               const statusEmoji = u.is_online ? 'Ã°Å¸Å¸Â¢' : 'Ã°Å¸â€Â´';
+               const statusEmoji = u.is_online ? 'ÃƒÂ°Ã…Â¸Ã…Â¸Ã‚Â¢' : 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â´';
                recipientOptions.push(`<option value="${u.username}">${statusEmoji} Para: ${u.username}</option>`);
             }
             
             const statusClass = u.is_online ? 'status-online' : 'status-offline';
-            const statusText = u.is_online ? 'En LÃƒÂ­nea' : 'Desconectado';
+            const statusText = u.is_online ? 'En LÃƒÆ’Ã‚Â­nea' : 'Desconectado';
             onlineList.innerHTML += `
                <div style="display: flex; align-items: center; gap: 0.5rem;">
                    <span class="status-dot ${statusClass}"></span>
@@ -1266,7 +1266,7 @@ window.renderMessages = function() {
         
         let readIndicator = '';
         if(isMe && isDM) {
-             readIndicator = m.read ? '<span style="font-size:0.75rem; color:var(--success-color); margin-top:2px;">Ã¢Å“â€Ã¢Å“â€ LeÃƒÂ­do</span>' : '<span style="font-size:0.75rem; color:rgba(255,255,255,0.7); margin-top:2px;">Ã¢Å“â€ Entregado</span>';
+             readIndicator = m.read ? '<span style="font-size:0.75rem; color:var(--success-color); margin-top:2px;">ÃƒÂ¢Ã…â€œÃ¢â‚¬ÂÃƒÂ¢Ã…â€œÃ¢â‚¬Â LeÃƒÆ’Ã‚Â­do</span>' : '<span style="font-size:0.75rem; color:rgba(255,255,255,0.7); margin-top:2px;">ÃƒÂ¢Ã…â€œÃ¢â‚¬Â Entregado</span>';
         }
 
         box.innerHTML += `
@@ -1354,7 +1354,7 @@ function renderClients() {
     if (expiringTodayNames.length > 0 && !hasAlertedExpirationsToday && currentUser && currentUser.role === 'Admin') {
         hasAlertedExpirationsToday = true;
         setTimeout(() => {
-            alert("Ã‚Â¡AtenciÃƒÂ³n! Los siguientes clientes vencen el dÃƒÂ­a de HOY:\n\n- " + expiringTodayNames.join("\n- "));
+            alert("Ãƒâ€šÃ‚Â¡AtenciÃƒÆ’Ã‚Â³n! Los siguientes clientes vencen el dÃƒÆ’Ã‚Â­a de HOY:\n\n- " + expiringTodayNames.join("\n- "));
         }, 500);
         DB.ActivityDB.log("Sistema", "Vencimiento HOY de: " + expiringTodayNames.join(", "));
     }
@@ -1386,14 +1386,14 @@ window.showClientsCategory = function(category) {
     }
     
     if(filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay clientes en esta categorÃƒÂ­a.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay clientes en esta categorÃƒÆ’Ã‚Â­a.</td></tr>';
     } else {
         filtered.forEach(c => {
             const expRules = window.checkClientExpiration(c);
             const isExpired = expRules.isExpired;
             
             const pdate = new Date(c.payment_date).toLocaleDateString();
-            const extBadge = c.extension_days ? `<span style="font-size:0.75rem; color:var(--text-secondary); margin-left: 5px;">(+${c.extension_days}d prÃƒÂ³rroga)</span>` : '';
+            const extBadge = c.extension_days ? `<span style="font-size:0.75rem; color:var(--text-secondary); margin-left: 5px;">(+${c.extension_days}d prÃƒÆ’Ã‚Â³rroga)</span>` : '';
             const expBadge = isExpired ? '<span style="color: white; background: var(--danger-color); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-left: 5px;">Vencido</span>' : '';
             
             const trainerObj = c.trainer_id ? DB.UserDB.getAll().find(u => u.id === c.trainer_id) : null;
@@ -1402,14 +1402,14 @@ window.showClientsCategory = function(category) {
             tbody.innerHTML += `
                 <tr style="${isExpired && category !== 'Vencidos' ? 'background: rgba(239, 68, 68, 0.05);' : ''}">
                     <td><strong>${c.name} ${c.surname}</strong>${extBadge}<br><small style="color:var(--accent-color)">Entrenador: ${trainerName}</small></td>
-                    <td>${c.age} aÃƒÂ±os / ${c.weight} kg</td>
+                    <td>${c.age} aÃƒÆ’Ã‚Â±os / ${c.weight} kg</td>
                     <td>${c.address} <br> <small style="color:var(--text-secondary)"><i class="fas fa-phone"></i> ${c.phone}</small></td>
                     <td>${c.plan_type}</td>
                     <td>${pdate} ${expBadge}</td>
                     <td class="action-btns admin-only">
                         ${c.plan_type === 'Diario' ? `<button class="btn-icon" style="color: var(--success-color);" onclick="openDailyPassModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}', '${c.trainer_id || ''}')" title="Cobrar Pase Diario"><i class="fas fa-ticket-alt"></i></button>` : ''}
-                        ${c.plan_type !== 'Diario' ? `<button class="btn-icon" style="color: var(--success-color);" onclick="openRenewModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}', '${c.plan_type}')" title="Pagar MembresÃƒÂ­a"><i class="fas fa-dollar-sign"></i></button>` : ''}
-                        <button class="btn-icon" style="color: #f59e0b;" onclick="openExtensionModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}')" title="Otorgar PrÃƒÂ³rroga"><i class="fas fa-calendar-plus"></i></button>
+                        ${c.plan_type !== 'Diario' ? `<button class="btn-icon" style="color: var(--success-color);" onclick="openRenewModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}', '${c.plan_type}')" title="Pagar MembresÃƒÆ’Ã‚Â­a"><i class="fas fa-dollar-sign"></i></button>` : ''}
+                        <button class="btn-icon" style="color: #f59e0b;" onclick="openExtensionModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}')" title="Otorgar PrÃƒÆ’Ã‚Â³rroga"><i class="fas fa-calendar-plus"></i></button>
                         <button class="btn-icon" onclick="editClient('${c.id}')" title="Editar"><i class="fas fa-edit"></i></button>
                         ${currentUser.role === 'Admin' ? `<button class="btn-icon" style="color: var(--danger-color)" onclick="deleteClient('${c.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
                     </td>
@@ -1433,7 +1433,7 @@ window.editItem = function(id) {
     document.getElementById('item-price').value = item.price;
     document.getElementById('item-qty').value = item.quantity;
     
-    document.getElementById('modal-item-title').innerText = 'Editar ArtÃƒÂ­culo';
+    document.getElementById('modal-item-title').innerText = 'Editar ArtÃƒÆ’Ã‚Â­culo';
     document.getElementById('modal-item-form').classList.add('active');
 }
 
@@ -1450,14 +1450,14 @@ window.adjustStockForm = function(id) {
 }
 
 window.deleteItem = function(id) {
-    if(confirm('Ã‚Â¿Seguro que desea eliminar este artÃƒÂ­culo?')) {
+    if(confirm('Ãƒâ€šÃ‚Â¿Seguro que desea eliminar este artÃƒÆ’Ã‚Â­culo?')) {
         DB.InventoryDB.remove(id);
         renderInventory();
     }
 }
 
 window.deleteUser = function(id) {
-    if(confirm('Ã‚Â¿Seguro que desea eliminar este usuario?')) {
+    if(confirm('Ãƒâ€šÃ‚Â¿Seguro que desea eliminar este usuario?')) {
         DB.UserDB.remove(id);
         renderUsers();
     }
@@ -1483,7 +1483,7 @@ window.editClient = function(id) {
 
 window.exportReportsToExcel = function() {
     if (typeof XLSX === 'undefined') {
-        alert("La librerÃƒÂ­a de exportaciÃƒÂ³n aÃƒÂºn no ha cargado (o no hay conexiÃƒÂ³n a internet). Intenta nuevamente en unos segundos.");
+        alert("La librerÃƒÆ’Ã‚Â­a de exportaciÃƒÆ’Ã‚Â³n aÃƒÆ’Ã‚Âºn no ha cargado (o no hay conexiÃƒÆ’Ã‚Â³n a internet). Intenta nuevamente en unos segundos.");
         return;
     }
 
@@ -1499,10 +1499,10 @@ window.exportReportsToExcel = function() {
     const formatSaleRow = (s) => {
         const itemNames = (s.items || []).map(i => `${i.qty || 1}x ${i.name || 'Desconocido'}`).join(' + ');
         return {
-            "Fecha EmisiÃƒÂ³n": new Date(s.date).toLocaleString(),
+            "Fecha EmisiÃƒÆ’Ã‚Â³n": new Date(s.date).toLocaleString(),
             "ID Venta": s.id,
-            "DescripciÃƒÂ³n de ArtÃƒÂ­culos": itemNames,
-            "MÃƒÂ©todo de Pago": s.payment_method || 'Desconocido',
+            "DescripciÃƒÆ’Ã‚Â³n de ArtÃƒÆ’Ã‚Â­culos": itemNames,
+            "MÃƒÆ’Ã‚Â©todo de Pago": s.payment_method || 'Desconocido',
             "Estado": s.status === 'Cancelada' ? 'Cancelada' : 'Completada',
             "Total Generado ($)": parseFloat(s.total_amount || 0).toFixed(2)
         };
@@ -1522,8 +1522,8 @@ window.exportReportsToExcel = function() {
     });
 
     if(exportDaily.length === 0) exportDaily.push({"Mensaje": "Sin ventas registradas hoy"});
-    if(exportWeekly.length === 0) exportWeekly.push({"Mensaje": "Sin ventas en la ÃƒÂºltima semana"});
-    if(exportMonthly.length === 0) exportMonthly.push({"Mensaje": "Sin ventas en el ÃƒÂºltimo mes"});
+    if(exportWeekly.length === 0) exportWeekly.push({"Mensaje": "Sin ventas en la ÃƒÆ’Ã‚Âºltima semana"});
+    if(exportMonthly.length === 0) exportMonthly.push({"Mensaje": "Sin ventas en el ÃƒÆ’Ã‚Âºltimo mes"});
 
     const wsDaily = XLSX.utils.json_to_sheet(exportDaily);
     const wsWeekly = XLSX.utils.json_to_sheet(exportWeekly);
@@ -1531,15 +1531,15 @@ window.exportReportsToExcel = function() {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, wsDaily, "Diario (Hoy)");
-    XLSX.utils.book_append_sheet(wb, wsWeekly, "Semanal (ÃƒÅ¡ltimos 7 dÃƒÂ­as)");
-    XLSX.utils.book_append_sheet(wb, wsMonthly, "Mensual (ÃƒÅ¡ltimos 30 dÃƒÂ­as)");
+    XLSX.utils.book_append_sheet(wb, wsWeekly, "Semanal (ÃƒÆ’Ã…Â¡ltimos 7 dÃƒÆ’Ã‚Â­as)");
+    XLSX.utils.book_append_sheet(wb, wsMonthly, "Mensual (ÃƒÆ’Ã…Â¡ltimos 30 dÃƒÆ’Ã‚Â­as)");
 
     XLSX.writeFile(wb, `Reporte_Estadistico_${new Date().toLocaleDateString().replace(/\//g,'-')}.xlsx`);
-    if(window.currentUser) DB.ActivityDB.log(window.currentUser.username, "ExportÃƒÂ³ informe estadÃƒÂ­stico mÃƒÂºltiple a Excel");
+    if(window.currentUser) DB.ActivityDB.log(window.currentUser.username, "ExportÃƒÆ’Ã‚Â³ informe estadÃƒÆ’Ã‚Â­stico mÃƒÆ’Ã‚Âºltiple a Excel");
 };
 
 window.deleteClient = function(id) {
-    if(confirm('Ã‚Â¿Seguro que desea eliminar este cliente?')) {
+    if(confirm('Ãƒâ€šÃ‚Â¿Seguro que desea eliminar este cliente?')) {
         DB.ClientsDB.remove(id);
         renderClients();
         document.getElementById('clients-list-container').style.display='none';
@@ -1552,30 +1552,30 @@ window.removeFromCart = function(index) {
 }
 
 window.factoryResetSystem = function() {
-    if(prompt("PRECAUCIÃƒâ€œN EXTREMA: Esto eliminarÃƒÂ¡ de forma irreversible TODO el inventario, clientes, historial de ventas y flujos de caja. Escribe exactamente 'CONFIRMAR' (en mayÃƒÂºsculas) para ejecutar:") === 'CONFIRMAR') {
+    if(prompt("PRECAUCIÃƒÆ’Ã¢â‚¬Å“N EXTREMA: Esto eliminarÃƒÆ’Ã‚Â¡ de forma irreversible TODO el inventario, clientes, historial de ventas y flujos de caja. Escribe exactamente 'CONFIRMAR' (en mayÃƒÆ’Ã‚Âºsculas) para ejecutar:") === 'CONFIRMAR') {
         requireAuth((authUser) => {
             if(authUser.role !== 'Admin') return alert("Denegado: Solo el perfil Administrador maestro puede vaciar la base de datos.");
             try {
                 await DB.SystemDB.factoryReset();
-                DB.ActivityDB.log(authUser.username, "¡REALIZÓ UN BORRADO GENERAL (FACTORY RESET) DE TODA LA BASE DE DATOS MANTENIENDO SOLO USUARIOS!");
-                alert("Limpieza a cero completada con éxito. El sistema está ahora como nuevo. Redirigiendo...");
+                DB.ActivityDB.log(authUser.username, "Â¡REALIZÃ“ UN BORRADO GENERAL (FACTORY RESET) DE TODA LA BASE DE DATOS MANTENIENDO SOLO USUARIOS!");
+                alert("Limpieza a cero completada con Ã©xito. El sistema estÃ¡ ahora como nuevo. Redirigiendo...");
                 window.location.reload();
             } catch(e) {
                 alert("Error al intentar limpiar la base de datos en Firebase: " + e.message);
             }
         }
-    }, "Confirmación Requerida para Factory Reset");
+    }, "ConfirmaciÃ³n Requerida para Factory Reset");
 };
     } else {
-        alert("OperaciÃƒÂ³n cancelada. El comando no coincidiÃƒÂ³ perfectamente con 'CONFIRMAR'");
+        alert("OperaciÃƒÆ’Ã‚Â³n cancelada. El comando no coincidiÃƒÆ’Ã‚Â³ perfectamente con 'CONFIRMAR'");
     }
 }
 
 window.cancelSale = function(id) {
-    if(confirm('Ã‚Â¿EstÃƒÂ¡s seguro de cancelar esta venta? El stock de los artÃƒÂ­culos devueltos se sumarÃƒÂ¡ nuevamente y el efectivo se marcarÃƒÂ¡ en 0.')) {
+    if(confirm('Ãƒâ€šÃ‚Â¿EstÃƒÆ’Ã‚Â¡s seguro de cancelar esta venta? El stock de los artÃƒÆ’Ã‚Â­culos devueltos se sumarÃƒÆ’Ã‚Â¡ nuevamente y el efectivo se marcarÃƒÆ’Ã‚Â¡ en 0.')) {
         try {
             DB.SalesDB.cancelSale(id, currentUser.id);
-            if(currentUser) DB.ActivityDB.log(currentUser.username, `CancelÃƒÂ³ la venta con ID ${id}`);
+            if(currentUser) DB.ActivityDB.log(currentUser.username, `CancelÃƒÆ’Ã‚Â³ la venta con ID ${id}`);
             alert('Venta cancelada exitosamente.');
             renderSalesHistory();
             renderDashboard();
@@ -1597,7 +1597,7 @@ window.openRenewModal = function(id, name, planType) {
     document.getElementById('renew-plan-days').value = days;
     
     document.getElementById('renew-plan-name-display').innerText = planType;
-    document.getElementById('renew-plan-days-display').innerText = `+${days} dÃƒÂ­as`;
+    document.getElementById('renew-plan-days-display').innerText = `+${days} dÃƒÆ’Ã‚Â­as`;
     document.getElementById('renew-price').value = '';
     
     openModal('modal-renew-membership');
@@ -1646,7 +1646,7 @@ if(fileImport) {
         const file = e.target.files[0];
         if(!file) return;
         
-        if(!confirm('Ã‚Â¿EstÃƒÂ¡s seguro de que deseas importar estos datos? ADVERTENCIA: Se borrarÃƒÂ¡n todos los datos actuales del sistema y se reemplazarÃƒÂ¡n por los del archivo.')) {
+        if(!confirm('Ãƒâ€šÃ‚Â¿EstÃƒÆ’Ã‚Â¡s seguro de que deseas importar estos datos? ADVERTENCIA: Se borrarÃƒÆ’Ã‚Â¡n todos los datos actuales del sistema y se reemplazarÃƒÆ’Ã‚Â¡n por los del archivo.')) {
             e.target.value = ''; // reset hidden input
             return;
         }
@@ -1670,10 +1670,10 @@ if(fileImport) {
                     processArray(importedData.sales, 'gym_sales');
                     processArray(importedData.clients, 'gym_clients');
                     
-                    alert('Datos importados a la Nube correctamente. PodrÃƒÂ­a tomar unos segundos en aparecer.');
+                    alert('Datos importados a la Nube correctamente. PodrÃƒÆ’Ã‚Â­a tomar unos segundos en aparecer.');
                     window.location.reload();
                 } else {
-                    alert('El archivo no parece ser un respaldo vÃƒÂ¡lido del programa.');
+                    alert('El archivo no parece ser un respaldo vÃƒÆ’Ã‚Â¡lido del programa.');
                 }
             } catch(error) {
                 alert('Hubo un error al leer el archivo. Verifica que sea el .json correcto.');
@@ -1740,7 +1740,7 @@ window.renderReports = function() {
            if(i.name.toLowerCase().includes('agua') || i.name.toLowerCase().includes('bebida') || i.name.toLowerCase().includes('cava') || i.name.toLowerCase().includes('energetic')) category = 'Bebidas';
            else if(i.name.includes('Pase Diario')) category = 'Tickets Diarios';
            else if(i.name.toLowerCase().includes('suplemento') || i.name.toLowerCase().includes('proteina') || i.name.toLowerCase().includes('creatina')) category = 'Suplementos';
-           else category = 'ArtÃƒÂ­culos Varios';
+           else category = 'ArtÃƒÆ’Ã‚Â­culos Varios';
            
            if(!deptTotals[category]) deptTotals[category] = 0;
            deptTotals[category] += i.subtotal || (i.price * i.qty) || 0;
@@ -1782,7 +1782,7 @@ window.renderReports = function() {
                 </tr>`;
             }
         });
-        if(tBodyMonthly.innerHTML === '') tBodyMonthly.innerHTML = '<tr><td colspan="3">AÃƒÂºn no hay datos para este aÃƒÂ±o</td></tr>';
+        if(tBodyMonthly.innerHTML === '') tBodyMonthly.innerHTML = '<tr><td colspan="3">AÃƒÆ’Ã‚Âºn no hay datos para este aÃƒÆ’Ã‚Â±o</td></tr>';
     }
 
     const ctxWeekly = document.getElementById('chart-weekly-sales');
@@ -1790,7 +1790,7 @@ window.renderReports = function() {
     weeklyChartInstance = new Chart(ctxWeekly, {
         type: 'bar',
         data: {
-            labels: ['Lunes', 'Martes', 'MiÃƒÂ©rcoles', 'Jueves', 'Viernes', 'SÃƒÂ¡bado', 'Domingo'],
+            labels: ['Lunes', 'Martes', 'MiÃƒÆ’Ã‚Â©rcoles', 'Jueves', 'Viernes', 'SÃƒÆ’Ã‚Â¡bado', 'Domingo'],
             datasets: [{
                 label: 'Ventas de la semana actual ($)',
                 data: weeklyTotals,
@@ -1892,8 +1892,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const price = parseFloat(document.getElementById('v-daily-price').value);
             const method = document.getElementById('v-daily-payment-method').value;
             
-            if (method === 'CrÃƒÂ©dito') {
-                 if(!finalName) { alert("Obligatorio elegir un cliente para crear la cuenta de crÃƒÂ©dito."); return; }
+            if (method === 'CrÃƒÆ’Ã‚Â©dito') {
+                 if(!finalName) { alert("Obligatorio elegir un cliente para crear la cuenta de crÃƒÆ’Ã‚Â©dito."); return; }
                  window.pendingCreditData = {
                      isDailyPass: true,
                      pendingClientName: finalName,
@@ -1906,7 +1906,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if(!existingClient && newName) {
-                // Registrar al cliente si se escribiÃƒÂ³ nombre nuevo.
+                // Registrar al cliente si se escribiÃƒÆ’Ã‚Â³ nombre nuevo.
                 const newClient = {
                     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
                     name: newName,
@@ -1915,7 +1915,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     weight: 0,
                     address: '',
                     phone: '',
-                    plan_type: 'Pase de 1 DÃƒÂ­a',
+                    plan_type: 'Pase de 1 DÃƒÆ’Ã‚Â­a',
                     payment_date: new Date().toISOString(),
                     extension_days: 0,
                     trainer_id: ''
@@ -1942,7 +1942,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-window.renderExpenses = function() { const tbody = document.querySelector('#expenses-table tbody'); if(!tbody) return; tbody.innerHTML = ''; const expenses = DB.ExpensesDB.getAll().sort((a,b) => new Date(b.date) - new Date(a.date)); expenses.forEach(e => { const user = DB.UserDB.getAll().find(u => u.id === e.user_id); const userName = user ? user.username : 'Desconocido'; tbody.innerHTML += \<tr><td>\</td><td>\</td><td style='color: var(--danger-color); font-weight:bold;'>$\</td><td>\</td><td><button class='btn-danger admin-only' onclick='DB.ExpensesDB.remove(\"\\")'><i class='fas fa-trash'></i></button></td></tr>\; }); }; document.addEventListener('DOMContentLoaded', () => { const expForm = document.getElementById('expense-form'); if(expForm) expForm.addEventListener('submit', (e) => { e.preventDefault(); const desc = document.getElementById('expense-desc').value; const amount = document.getElementById('expense-amount').value; requireAuth((authUser) => { DB.ExpensesDB.add(desc, amount, authUser.id); DB.ActivityDB.log(authUser.username, \RegistrÃ³ un gasto operativo: \ por $\\); closeModal('modal-expense-form'); document.getElementById('expense-form').reset(); alert('Gasto guardado.'); }); }); });
+window.renderExpenses = function() { const tbody = document.querySelector('#expenses-table tbody'); if(!tbody) return; tbody.innerHTML = ''; const expenses = DB.ExpensesDB.getAll().sort((a,b) => new Date(b.date) - new Date(a.date)); expenses.forEach(e => { const user = DB.UserDB.getAll().find(u => u.id === e.user_id); const userName = user ? user.username : 'Desconocido'; tbody.innerHTML += \<tr><td>\</td><td>\</td><td style='color: var(--danger-color); font-weight:bold;'>$\</td><td>\</td><td><button class='btn-danger admin-only' onclick='DB.ExpensesDB.remove(\"\\")'><i class='fas fa-trash'></i></button></td></tr>\; }); }; document.addEventListener('DOMContentLoaded', () => { const expForm = document.getElementById('expense-form'); if(expForm) expForm.addEventListener('submit', (e) => { e.preventDefault(); const desc = document.getElementById('expense-desc').value; const amount = document.getElementById('expense-amount').value; requireAuth((authUser) => { DB.ExpensesDB.add(desc, amount, authUser.id); DB.ActivityDB.log(authUser.username, \RegistrÃƒÂ³ un gasto operativo: \ por $\\); closeModal('modal-expense-form'); document.getElementById('expense-form').reset(); alert('Gasto guardado.'); }); }); });
 
 
 window.renderExpenseSemaphore = function() {
@@ -2041,7 +2041,7 @@ window.renderTrainerMetrics = function() {
         
         // El acumulado real del mes es los clientes activos pagando  
         const realAcumulado30 = ownClients.reduce((sum, c) => sum + (parseFloat(c.agreed_amount) || parseFloat(c.plan_fee) || tPrice), 0);
-        // Asumimos un 25% para el periodo de 7 dÃƒÂ­as
+        // Asumimos un 25% para el periodo de 7 dÃƒÆ’Ã‚Â­as
         const realAcumulado7 = realAcumulado30 / 4;
         
         if (clientsCount > 0 || u.role === 'Entrenador') {
@@ -2051,16 +2051,15 @@ window.renderTrainerMetrics = function() {
             
             metaSemanalData.push(expectedRev / 4);
             acumuladoSemanalData.push(realAcumulado7);
-            
-            trBody.innerHTML += \
+            trBody.innerHTML += `
                 <tr>
-                    <td><strong>\</strong></td>
-                    <td>\ </td>
-                    <td>$\</td>
-                    <td style="color:var(--success-color); font-weight:bold;">$\</td>
-                    <td style="color:var(--accent-color); font-weight:bold;">$\</td>
+                    <td><strong>${u.username}</strong></td>
+                    <td>${clientsCount} </td>
+                    <td>$${expectedRev.toFixed(2)}</td>
+                    <td style="color:var(--success-color); font-weight:bold;">$${realAcumulado30.toFixed(2)}</td>
+                    <td style="color:var(--accent-color); font-weight:bold;">$${realAcumulado7.toFixed(2)}</td>
                 </tr>
-            \;
+            `;
         }
     });
 
@@ -2089,7 +2088,7 @@ window.renderTrainerMetrics = function() {
                 labels: labels,
                 datasets: [
                     { label: 'Meta Semanal Proporcional ($)', data: metaSemanalData, backgroundColor: 'rgba(10, 132, 255, 0.4)', borderColor: 'rgba(10, 132, 255, 1)', borderWidth: 1, borderRadius: 4 },
-                    { label: 'Ingresos de los Ãºltimos 7d ($)', data: acumuladoSemanalData, backgroundColor: 'rgba(10, 132, 255, 1)', borderColor: 'rgba(10, 132, 255, 1)', borderWidth: 1, borderRadius: 4 }
+                    { label: 'Ingresos de los ÃƒÂºltimos 7d ($)', data: acumuladoSemanalData, backgroundColor: 'rgba(10, 132, 255, 1)', borderColor: 'rgba(10, 132, 255, 1)', borderWidth: 1, borderRadius: 4 }
                 ]
             },
             options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' }
@@ -2110,7 +2109,7 @@ window.saveSystemConfig = function() {
         vfoneMid: document.getElementById('conf-vfone-mid').value
     };
     DB.ConfigDB.update(data);
-    alert('Configuración guardada exitosamente.');
+    alert('ConfiguraciÃ³n guardada exitosamente.');
 };
 
 window.renderConfig = function() {
@@ -2127,133 +2126,3 @@ window.renderConfig = function() {
 };
 
 window.generateAndPrintInvoice = function(saleObj, ncfType, clientRNC) {
-    const conf = DB.ConfigDB.get();
-    const gymName = conf.gymName || 'Mi Gimnasio';
-    const gymRnc = conf.gymRnc || 'N/A';
-    const gymAddress = conf.gymAddress || 'N/A';
-    const gymPhone = conf.gymPhone || 'N/A';
-    
-    // NCF Mock logic
-    let ncfString = '';
-    let docType = 'FACTURA';
-    if(ncfType === 'cred_fiscal') {
-        ncfString = 'B01' + Math.floor(10000000 + Math.random() * 90000000); // 8 random digits
-        docType = 'FACTURA CON VALOR FISCAL';
-    } else if(ncfType === 'cons_final') {
-        ncfString = 'B02' + Math.floor(10000000 + Math.random() * 90000000);
-        docType = 'FACTURA PARA CONSUMIDOR FINAL';
-    }
-
-    let itemsHtml = '';
-    if(saleObj.items) {
-        saleObj.items.forEach(i => {
-            const sub = (i.price * i.qty).toFixed(2);
-            itemsHtml += \<tr><td style="padding:4px 0;">\ (x\)</td><td style="text-align:right;">$\</td></tr>\;
-        });
-    } else {
-         itemsHtml += \<tr><td style="padding:4px 0;">Pase Diario Express</td><td style="text-align:right;">$\</td></tr>\;
-    }
-    
-    // ITBIS Calculation (Mock 18% inside the total)
-    const total = saleObj.total_amount || saleObj.total_cost;
-    const subtotal = total / 1.18;
-    const itbis = total - subtotal;
-
-    const ticketHtml = \
-    <html><head><title>Factura</title>
-    <style>
-        body { font-family: 'Courier New', Courier, monospace; font-size: 12px; margin: 0; padding: 10px; width: 300px; }
-        .text-center { text-align: center; }
-        .line { border-bottom: 1px dashed #000; margin: 10px 0; }
-        table { width: 100%; border-collapse: collapse; }
-    </style>
-    </head><body>
-        <div class="text-center">
-            <h2>\</h2>
-            <p>RNC: \<br>\<br>Tel: \</p>
-        </div>
-        <div class="line"></div>
-        <div class="text-center" style="font-weight:bold;">\</div>
-        <div class="line"></div>
-        <p>
-            Fecha: \<br>
-            Cajero: \<br>
-            Método de Pago: \<br>
-            \
-            \
-        </p>
-        <div class="line"></div>
-        <table>\</table>
-        <div class="line"></div>
-        <table>
-            <tr><td>Subtotal:</td><td style="text-align:right;">$\</td></tr>
-            <tr><td>ITBIS (18%):</td><td style="text-align:right;">$\</td></tr>
-            <tr><td style="font-weight:bold; font-size:14px;">TOTAL:</td><td style="text-align:right; font-weight:bold; font-size:14px;">$\</td></tr>
-        </table>
-        <div class="line"></div>
-        <p class="text-center">¡Gracias por preferirnos!</p>
-    </body></html>\;
-
-    const printWin = window.open('', '_blank', 'width=400,height=600');
-    printWin.document.open();
-    printWin.document.write(ticketHtml);
-    printWin.document.close();
-    printWin.focus();
-    setTimeout(() => { printWin.print(); }, 500);
-};
-
-// Override Interception for Print / Verifone in Form Submission (Sales)
-const originalBtnProcess = document.getElementById('btn-process-sale');
-if(originalBtnProcess) {
-    const clone = originalBtnProcess.cloneNode(true);
-    originalBtnProcess.parentNode.replaceChild(clone, originalBtnProcess);
-    
-    clone.addEventListener('click', async (e) => {
-        if(cart.length === 0) return alert('El carrito estÃ¡ vacÃ­o.');
-        const pMethod = document.getElementById('sale-payment-method').value;
-        const conf = DB.ConfigDB.get();
-        let clientRnc = '';
-        let ncfType = '';
-        const credNode = document.querySelector('input[name="sale-ncf-type"]:checked');
-        if(credNode) ncfType = credNode.value;
-        if(ncfType === 'cred_fiscal') {
-            clientRnc = document.getElementById('sale-rnc-input').value;
-            if(!clientRnc) { alert("Debes ingresar el RNC del cliente para el comprobante de crÃ©dito fiscal."); return; }
-        }
-        
-        if (pMethod === 'Tarjeta' && conf.vfoneTid && conf.vfoneKey) {
-            alert("Conectando con Punto de Venta Verifone... (TID: " + conf.vfoneTid + ").\\n\\nEnviando orden de cobro vÃ­a API Cloud, por favor pase la tarjeta en el equipo en mostrador.");
-            // Here you'd use fetch() to Verifone Connect Endpoint in real life
-            await new Promise(r => setTimeout(r, 2000));
-            alert("TransacciÃ³n Verifone Aprobada.");
-        }
-        
-        requireAuth((authUser) => {
-            if(pMethod === 'CrÃ©dito' && authUser.role !== 'Admin') {
-                return alert("Solo Admins pueden procesar CrÃ©dito directo asÃ­. Usa OTP en recibos.");
-            }
-            const items = [...cart];
-            const saleObj = {
-                id: generateId(),
-                items: items,
-                total_amount: cartTotal,
-                payment_method: pMethod,
-                date: new Date().toISOString(),
-                user: authUser.username,
-                status: 'Completada',
-                ncf: ncfType
-            };
-            DB.SalesDB.add(saleObj);
-            items.forEach(i => DB.InventoryDB.update(i.id, i.qty, 'OUT'));
-            DB.ActivityDB.log(authUser.username, \Venta (\) procesada por $\\);
-            
-            alert('Venta Completada. Abriendo ImpresiÃ³n de Factura...');
-            window.generateAndPrintInvoice(saleObj, ncfType, clientRnc);
-            
-            cart = [];
-            updateCartTable();
-            document.getElementById('sale-q').value = '';
-            closeModal('modal-sale-auth');
-        });
-    });
-}
