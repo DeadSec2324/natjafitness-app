@@ -1,0 +1,1 @@
+var file = WScript.CreateObject("Scripting.FileSystemObject").OpenTextFile("C:\\Users\\logit\\OneDrive\\Desktop\\Programa de inventario\\app.js", 1); var content = file.ReadAll(); file.Close(); try { new Function(content); WScript.Echo("No syntax errors"); } catch(e) { WScript.Echo("Syntax Error: " + e.message); }

@@ -160,6 +160,7 @@ function loadView(viewName) {
             viewName === 'daily-pass' ? 'Pase Diario Express' :
             viewName === 'messages' ? 'Mensajes' :
             viewName === 'receivables' ? 'Cuentas por Cobrar' :
+            viewName === 'trainers' ? 'Entrenadores' :
             'Usuarios';
     }
         
@@ -182,6 +183,9 @@ function loadView(viewName) {
             if(currentUser.role === 'Admin') {
                 if(window.renderReceivables) window.renderReceivables();
             }
+            break;
+        case 'trainers':
+            if(window.renderTrainersView) window.renderTrainersView();
             break;
     }
 }
@@ -283,7 +287,8 @@ function setupForms() {
                 description: document.getElementById('item-desc').value,
                 cost_price: parseFloat(document.getElementById('item-cost-price').value),
                 price: parseFloat(document.getElementById('item-price').value),
-                quantity: parseInt(document.getElementById('item-qty').value, 10)
+                quantity: parseFloat(document.getElementById('item-qty').value),
+                is_weight: document.getElementById('item-is-weight').checked
             };
             
             if (id) {
@@ -381,6 +386,19 @@ function setupForms() {
 
     // Client Form
     const clientForm = document.getElementById('client-form');
+    let chargeAndSaveMode = false;
+    const btnChargeSave = document.getElementById('btn-charge-save-client');
+    if (btnChargeSave) {
+        btnChargeSave.addEventListener('click', () => {
+            chargeAndSaveMode = true;
+            if (clientForm.checkValidity()) {
+                clientForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            } else {
+                clientForm.reportValidity();
+            }
+        });
+    }
+
     if(clientForm) {
         clientForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -405,18 +423,50 @@ function setupForms() {
                 address: document.getElementById('client-address').value,
                 phone: document.getElementById('client-phone').value,
                 plan_type: newPlan,
+                charge_amount: parseFloat(document.getElementById('client-charge-amount').value) || 0,
                 trainer_id: document.getElementById('client-trainer').value === 'NONE' ? '' : document.getElementById('client-trainer').value,
                 payment_date: paymentDate
             };
             
             requireAuth((authUser) => {
+                let currentClientId = id;
                 if (id) {
                     DB.ClientsDB.update(id, client);
                     if(authUser.role === 'Staff') DB.ActivityDB.log(authUser.username, `Editó al cliente ${client.name} ${client.surname}`);
                 } else {
-                    DB.ClientsDB.add(client);
+                    const newClient = DB.ClientsDB.add(client);
+                    currentClientId = newClient.id;
                     if(authUser.role === 'Staff') DB.ActivityDB.log(authUser.username, `Registró al nuevo cliente ${client.name} ${client.surname}`);
                 }
+                
+                if (chargeAndSaveMode && client.charge_amount > 0) {
+                    try {
+                        DB.SalesDB.registerMembershipPayment(authUser.id, `${client.name} ${client.surname}`, client.plan_type, client.charge_amount, "Efectivo");
+                        DB.ActivityDB.log(authUser.username, `Registró pago de membresía de $${client.charge_amount.toFixed(2)} para ${client.name} ${client.surname} (Cobrar y Guardar)`);
+                        
+                        // Update the payment date starting today
+                        const now = new Date();
+                        let planDays = 30;
+                        if(client.plan_type === 'Quincenal') planDays = 15;
+                        else if(client.plan_type === 'Diario') planDays = 1;
+                        now.setDate(now.getDate() + planDays);
+                        
+                        // Add points
+                        const currentClientObj = DB.ClientsDB.getById(currentClientId);
+                        if(currentClientObj) {
+                            currentClientObj.fit_points = (currentClientObj.fit_points || 0) + Math.floor(client.charge_amount);
+                            currentClientObj.payment_date = now.toISOString();
+                            currentClientObj.extension_days = 0;
+                            DB.ClientsDB.update(currentClientId, currentClientObj);
+                        } else {
+                            DB.ClientsDB.update(currentClientId, { payment_date: now.toISOString(), extension_days: 0 });
+                        }
+                    } catch (err) {
+                        alert("Error al procesar el cobro: " + err.message);
+                    }
+                }
+                chargeAndSaveMode = false;
+
                 closeModal('modal-client-form');
                 renderClients();
             });
@@ -453,8 +503,8 @@ function setupForms() {
     if (btnAddToCart) {
         btnAddToCart.addEventListener('click', () => {
             const itemId = document.getElementById('sale-item-select').value;
-            const qty = parseInt(document.getElementById('sale-item-qty').value, 10);
-            if(!itemId || qty < 1) return;
+            const qty = parseFloat(document.getElementById('sale-item-qty').value);
+            if(!itemId || qty <= 0) return;
             
             const item = DB.InventoryDB.getById(itemId);
             if(!item) return;
@@ -482,8 +532,25 @@ function setupForms() {
                 });
             }
             
-            document.getElementById('sale-item-qty').value = 1;
+            const qtyInput = document.getElementById('sale-item-qty');
+            qtyInput.value = qtyInput.getAttribute('step') === '0.01' ? '' : 1;
             renderCart();
+        });
+        
+        // Dynamic placeholder/step on item selection
+        const sltItem = document.getElementById('sale-item-select');
+        sltItem.addEventListener('change', (e) => {
+             const itm = DB.InventoryDB.getById(e.target.value);
+             const qtEl = document.getElementById('sale-item-qty');
+             if(itm && itm.is_weight) {
+                 qtEl.placeholder = 'Peso (Lbs)';
+                 qtEl.step = '0.01';
+                 qtEl.value = '';
+             } else {
+                 qtEl.placeholder = 'Cantidad';
+                 qtEl.step = '1';
+                 qtEl.value = 1;
+             }
         });
     }
     
@@ -590,6 +657,15 @@ function setupForms() {
             
             requireAuth((authUser) => {
                 DB.SalesDB.registerDailyPass(authUser.id, clientName, price, method);
+                
+                if(clientId) {
+                    const clientObj = DB.ClientsDB.getById(clientId);
+                    if(clientObj && price > 0) {
+                        clientObj.fit_points = (clientObj.fit_points || 0) + Math.floor(price);
+                        DB.ClientsDB.update(clientId, clientObj);
+                    }
+                }
+
                 if(authUser.role === 'Staff' || authUser.role === 'Admin') DB.ActivityDB.log(authUser.username, `Cobró Acceso Diario de $${price.toFixed(2)} a ${clientName} (${method})`);
                 alert(`Pase procesado con éxito para ${clientName}.`);
                 closeModal('modal-daily-pass');
@@ -623,10 +699,16 @@ function setupForms() {
                         const newDateObj = baseDate < now ? now : baseDate;
                         newDateObj.setDate(newDateObj.getDate() + planDays);
                         
-                        DB.ClientsDB.update(clientId, { payment_date: newDateObj.toISOString(), extension_days: 0 });
-                        
                         // Register Sales & Activity
                         DB.SalesDB.registerMembershipPayment(authUser.id, clientName, planType, price, method);
+                        
+                        if(price > 0) {
+                            client.fit_points = (client.fit_points || 0) + Math.floor(price);
+                        }
+                        client.payment_date = newDateObj.toISOString();
+                        client.extension_days = 0;
+                        DB.ClientsDB.update(clientId, client);
+                        
                         DB.ActivityDB.log(authUser.username, `Registró pago de membresía de $${price.toFixed(2)} para ${clientName}`);
                         
                         closeModal('modal-renew-membership');
@@ -1393,17 +1475,23 @@ window.showClientsCategory = function(category) {
             
             const trainerObj = c.trainer_id ? DB.UserDB.getAll().find(u => u.id === c.trainer_id) : null;
             const trainerName = trainerObj ? trainerObj.username : 'Sin Asignar';
+            const pts = c.fit_points || 0;
+            const ptsBadge = pts > 0 ? `<br><small style="color:var(--accent-color)"><i class="fas fa-star"></i> ${pts} Puntos Fit</small>` : '';
 
             tbody.innerHTML += `
                 <tr style="${isExpired && category !== 'Vencidos' ? 'background: rgba(239, 68, 68, 0.05);' : ''}">
-                    <td><strong>${c.name} ${c.surname}</strong>${extBadge}<br><small style="color:var(--accent-color)">Entrenador: ${trainerName}</small></td>
-                    <td>${c.age} años / ${c.weight} kg</td>
+                    <td><strong>${c.name} ${c.surname}</strong>${extBadge}<br><small style="color:var(--accent-color)">Entrenador: ${trainerName}</small>${ptsBadge}</td>
+                    <td>${c.age} años / ${c.weight} Lb</td>
                     <td>${c.address} <br> <small style="color:var(--text-secondary)"><i class="fas fa-phone"></i> ${c.phone}</small></td>
                     <td>${c.plan_type}</td>
                     <td>${pdate} ${expBadge}</td>
                     <td class="action-btns admin-only">
+                        <button class="btn-icon" style="color: #25D366;" onclick="openWhatsApp('${c.phone}', '${c.name.replace(/'/g, "\\'")}')" title="Recordatorio WhatsApp"><i class="fab fa-whatsapp"></i></button>
+                        <button class="btn-icon" style="color: var(--text-secondary);" onclick="openQRView('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}')" title="Ver Código QR"><i class="fas fa-qrcode"></i></button>
+                        ${pts > 0 ? `<button class="btn-icon" style="color: var(--accent-color);" onclick="openRedeemPoints('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}', ${pts})" title="Canjear Puntos Fit"><i class="fas fa-star"></i></button>` : ''}
                         ${c.plan_type === 'Diario' ? `<button class="btn-icon" style="color: var(--success-color);" onclick="openDailyPassModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}', '${c.trainer_id || ''}')" title="Cobrar Pase Diario"><i class="fas fa-ticket-alt"></i></button>` : ''}
                         ${c.plan_type !== 'Diario' ? `<button class="btn-icon" style="color: var(--success-color);" onclick="openRenewModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}', '${c.plan_type}')" title="Pagar Membresía"><i class="fas fa-dollar-sign"></i></button>` : ''}
+                        <button class="btn-icon" style="color: #6366f1;" onclick="openProgressModal('${c.id}')" title="Ver Progreso"><i class="fas fa-clipboard-list"></i></button>
                         <button class="btn-icon" style="color: #f59e0b;" onclick="openExtensionModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}')" title="Otorgar Prórroga"><i class="fas fa-calendar-plus"></i></button>
                         <button class="btn-icon" onclick="editClient('${c.id}')" title="Editar"><i class="fas fa-edit"></i></button>
                         ${currentUser.role === 'Admin' ? `<button class="btn-icon" style="color: var(--danger-color)" onclick="deleteClient('${c.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
@@ -1427,6 +1515,7 @@ window.editItem = function(id) {
     document.getElementById('item-cost-price').value = item.cost_price || 0;
     document.getElementById('item-price').value = item.price;
     document.getElementById('item-qty').value = item.quantity;
+    document.getElementById('item-is-weight').checked = item.is_weight || false;
     
     document.getElementById('modal-item-title').innerText = 'Editar Artículo';
     document.getElementById('modal-item-form').classList.add('active');
@@ -1452,6 +1541,15 @@ window.deleteItem = function(id) {
 }
 
 window.deleteUser = function(id) {
+    const userToDelete = DB.UserDB.getAll().find(u => u.id === id);
+    if(userToDelete && userToDelete.username === 'admin') {
+        alert("No se puede eliminar la cuenta de administrador principal.");
+        return;
+    }
+    if (currentUser && currentUser.id === id) {
+        alert("No puedes eliminar tu propio usuario mientras estás en sesión.");
+        return;
+    }
     if(confirm('¿Seguro que desea eliminar este usuario?')) {
         DB.UserDB.remove(id);
         renderUsers();
@@ -1470,6 +1568,10 @@ window.editClient = function(id) {
     document.getElementById('client-address').value = client.address;
     document.getElementById('client-phone').value = client.phone;
     document.getElementById('client-plan').value = client.plan_type;
+    document.getElementById('client-charge-amount').value = client.charge_amount || '';
+    
+    populateTrainerSelect();
+    document.getElementById('client-trainer').value = client.trainer_id || 'NONE';
     
     document.getElementById('modal-client-form').classList.add('active');
 }
@@ -1545,21 +1647,16 @@ window.removeFromCart = function(index) {
 }
 
 window.factoryResetSystem = function() {
-    if(prompt("PRECAUCIÓN EXTREMA: Esto eliminará de forma irreversible TODO el inventario, clientes, historial de ventas y flujos de caja. Escribe exactamente 'CONFIRMAR' (en mayúsculas) para ejecutar:") === 'CONFIRMAR') {
-        requireAuth((authUser) => {
+    if(prompt("PRECAUCION EXTREMA: Esto eliminará de forma irreversible TODO el inventario, clientes, historial de ventas y flujos de caja. Escribe exactamente 'CONFIRMAR' (en mayúsculas) para ejecutar:") === 'CONFIRMAR') {
+        requireAuth(async (authUser) => {
             if(authUser.role !== 'Admin') return alert("Denegado: Solo el perfil Administrador maestro puede vaciar la base de datos.");
             try {
-                localStorage.setItem('gym_inventory', '[]');
-                localStorage.setItem('gym_clients', '[]');
-                localStorage.setItem('gym_sales', '[]');
-                localStorage.setItem('gym_transactions', '[]');
-                localStorage.removeItem('gym_daily_prices');
-                
+                await DB.SystemDB.factoryReset();
                 DB.ActivityDB.log(authUser.username, "¡REALIZÓ UN BORRADO GENERAL (FACTORY RESET) DE TODA LA BASE DE DATOS MANTENIENDO SOLO USUARIOS!");
                 alert("Limpieza a cero completada con éxito. El sistema está ahora como nuevo. Redirigiendo...");
                 window.location.reload();
             } catch(e) {
-                alert("Error al intentar limpiar el almacenamiento: " + e.message);
+                alert("Error al intentar limpiar la base de datos: " + e.message);
             }
         });
     } else {
@@ -1594,7 +1691,8 @@ window.openRenewModal = function(id, name, planType) {
     
     document.getElementById('renew-plan-name-display').innerText = planType;
     document.getElementById('renew-plan-days-display').innerText = `+${days} días`;
-    document.getElementById('renew-price').value = '';
+    const c = DB.ClientsDB.getById(id);
+    document.getElementById('renew-price').value = c ? (c.charge_amount || '') : '';
     
     openModal('modal-renew-membership');
 }
@@ -1684,6 +1782,8 @@ let monthlyComparisonChartInstance = null;
 let weeklyChartInstance = null;
 let paymentChartInstance = null;
 let deptChartInstance = null;
+let trainerMonthlyChartInstance = null;
+let trainerWeeklyChartInstance = null;
 
 window.renderReports = function() {
     if(typeof Chart === 'undefined') return;
@@ -1838,22 +1938,65 @@ window.renderReports = function() {
         const users = DB.UserDB.getAll();
         const clients = DB.ClientsDB.getAll();
         
+        const trainerLabels = [];
+        const trainerProfitData = [];
+        const trainerMetaData = [];
+
         users.forEach(u => {
             const ownClients = clients.filter(c => c.trainer_id === u.id && !window.checkClientExpiration(c).isExpired);
             const clientsCount = ownClients.length;
             const tPrice = u.training_price || 0;
             const expectedProfit = clientsCount * tPrice;
+            const metaMensual = u.expected_revenue || 0;
             
             if(clientsCount > 0 || u.role === 'Entrenador' || u.role === 'Staff') {
+                trainerLabels.push(u.username);
+                trainerProfitData.push(expectedProfit);
+                trainerMetaData.push(metaMensual);
+
                 trBody.innerHTML += `
                     <tr>
                         <td><strong>${u.username}</strong></td>
                         <td>${clientsCount} activos</td>
+                        <td style="color:var(--text-secondary);">$${metaMensual.toFixed(2)}</td>
                         <td style="color:var(--success-color); font-weight:bold;">$${expectedProfit.toFixed(2)}</td>
+                        <td style="color:var(--primary-color);">$${(expectedProfit / 4).toFixed(2)}</td>
                     </tr>
                 `;
             }
         });
+
+        const ctxTrainerMonthly = document.getElementById('chart-trainer-monthly');
+        if (ctxTrainerMonthly) {
+            if(trainerMonthlyChartInstance) trainerMonthlyChartInstance.destroy();
+            trainerMonthlyChartInstance = new Chart(ctxTrainerMonthly, {
+                type: 'bar',
+                data: {
+                    labels: trainerLabels,
+                    datasets: [
+                        { label: 'Rendimiento (30d)', data: trainerProfitData, backgroundColor: '#d43bdb', borderRadius: 4 },
+                        { label: 'Meta Mensual', data: trainerMetaData, backgroundColor: 'rgba(212, 59, 219, 0.2)', borderWidth: 1, borderColor: '#d43bdb' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        const ctxTrainerWeekly = document.getElementById('chart-trainer-weekly');
+        if (ctxTrainerWeekly) {
+            if(trainerWeeklyChartInstance) trainerWeeklyChartInstance.destroy();
+            trainerWeeklyChartInstance = new Chart(ctxTrainerWeekly, {
+                type: 'bar',
+                data: {
+                    labels: trainerLabels,
+                    datasets: [
+                        { label: 'Avance (7d)', data: trainerProfitData.map(v => v/4), backgroundColor: '#0a84ff', borderRadius: 4 },
+                        { label: 'Meta Semanal', data: trainerMetaData.map(v => v/4), backgroundColor: 'rgba(10, 132, 255, 0.2)', borderWidth: 1, borderColor: '#0a84ff' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
     }
     
 };
@@ -1959,3 +2102,329 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// --- Client Progress Logic ---
+const PROGRESS_MEASURES = ['Pecho y espalda', 'Brazo D.', 'Brazo I.', 'Cintura', 'Cadera', 'Pierna D.', 'Pierna I.', 'Gemelo D.', 'Gemelo I.'];
+const PROGRESS_FAT = ['Abdomen', 'Tricep', 'Espalda', 'Muslo'];
+
+window.openProgressModal = function(id) {
+    const c = DB.ClientsDB.getById(id);
+    if(!c) return;
+    
+    document.getElementById('progress-client-id').value = id;
+    document.getElementById('progress-client-name').innerText = `${c.name} ${c.surname}`;
+    
+    const ps = c.progress_sheet || {};
+    
+    const buildRow = (label, keyPrefix, dataObj) => {
+        return `
+            <tr>
+                <td><strong>${label}</strong></td>
+                <td><input type="number" step="0.1" name="${keyPrefix}-init" value="${dataObj[`${keyPrefix}-init`] || ''}" style="width:100%; border:1px solid var(--border-color); background:rgba(0,0,0,0.1); color:white; padding:4px;"></td>
+                <td><input type="number" step="0.1" name="${keyPrefix}-m1" value="${dataObj[`${keyPrefix}-m1`] || ''}" style="width:100%; border:1px solid var(--border-color); background:rgba(0,0,0,0.1); color:white; padding:4px;"></td>
+                <td><input type="number" step="0.1" name="${keyPrefix}-m2" value="${dataObj[`${keyPrefix}-m2`] || ''}" style="width:100%; border:1px solid var(--border-color); background:rgba(0,0,0,0.1); color:white; padding:4px;"></td>
+                <td><input type="number" step="0.1" name="${keyPrefix}-m3" value="${dataObj[`${keyPrefix}-m3`] || ''}" style="width:100%; border:1px solid var(--border-color); background:rgba(0,0,0,0.1); color:white; padding:4px;"></td>
+                <td><input type="number" step="0.1" name="${keyPrefix}-m4" value="${dataObj[`${keyPrefix}-m4`] || ''}" style="width:100%; border:1px solid var(--border-color); background:rgba(0,0,0,0.1); color:white; padding:4px;"></td>
+                <td><input type="number" step="0.1" name="${keyPrefix}-m5" value="${dataObj[`${keyPrefix}-m5`] || ''}" style="width:100%; border:1px solid var(--border-color); background:rgba(0,0,0,0.1); color:white; padding:4px;"></td>
+            </tr>
+        `;
+    };
+    
+    let measuresHtml = '';
+    PROGRESS_MEASURES.forEach((m, idx) => measuresHtml += buildRow(m, `meas-${idx}`, ps));
+    document.getElementById('progress-measures-tbody').innerHTML = measuresHtml;
+    
+    document.getElementById('progress-weight-tbody').innerHTML = buildRow('LIBRA.', 'weight', ps);
+    
+    let fatHtml = '';
+    PROGRESS_FAT.forEach((m, idx) => fatHtml += buildRow(m, `fat-${idx}`, ps));
+    document.getElementById('progress-fat-tbody').innerHTML = fatHtml;
+    
+    document.getElementById('progress-observations').value = ps.observations || '';
+    
+    openModal('modal-client-progress');
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const progressForm = document.getElementById('client-progress-form');
+    if(progressForm) {
+        progressForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('progress-client-id').value;
+            const c = DB.ClientsDB.getById(id);
+            if(!c) return;
+            
+            const formData = new FormData(progressForm);
+            const ps = {};
+            for(let [key, value] of formData.entries()) {
+                ps[key] = value;
+            }
+            ps.observations = document.getElementById('progress-observations').value;
+            
+            c.progress_sheet = ps;
+            DB.ClientsDB.update(id, c);
+            
+            if(currentUser && currentUser.role === 'Staff') {
+                DB.ActivityDB.log(currentUser.username, `Actualizó la hoja de progreso del cliente ${c.name} ${c.surname}`);
+            }
+            
+            alert('Progreso guardado correctamente.');
+            closeModal('modal-client-progress');
+        });
+    }
+});
+
+// Premium Features Implementation
+window.openWhatsApp = function(phone, name) {
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const message = encodeURIComponent(`Hola ${name}, te saludamos de EJ Profit V&G. Te recordamos que tu plan de membresía está próximo a vencer. ¡Te esperamos para renovar!`);
+    window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
+};
+
+let qrCodeAdmin = null;
+window.openQRView = function(id, name) {
+    document.getElementById('qr-client-name').innerText = name;
+    const container = document.getElementById('admin-qrcode');
+    container.innerHTML = '';
+    qrCodeAdmin = new QRCode(container, {
+        text: id,
+        width: 200,
+        height: 200,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+    });
+    openModal('modal-qr-view');
+};
+
+window.openRedeemPoints = function(id, name, points) {
+    document.getElementById('redeem-client-id').value = id;
+    document.getElementById('redeem-client-name').innerText = name;
+    document.getElementById('redeem-points-balance').innerText = points;
+    document.getElementById('redeem-amount').value = '';
+    document.getElementById('redeem-reason').value = '';
+    openModal('modal-redeem-points');
+};
+
+window.processRedeemPoints = function() {
+    const id = document.getElementById('redeem-client-id').value;
+    const deduct = parseInt(document.getElementById('redeem-amount').value, 10);
+    const reason = document.getElementById('redeem-reason').value;
+    if(!deduct || deduct <= 0 || !reason) return alert("Completa la cantidad y el motivo.");
+    
+    const client = DB.ClientsDB.getById(id);
+    if(client) {
+        if(client.fit_points < deduct) return alert("Puntos insuficientes.");
+        client.fit_points -= deduct;
+        DB.ClientsDB.update(id, client);
+        if(currentUser) DB.ActivityDB.log(currentUser.username, `Canjeó ${deduct} Puntos Fit del cliente ${client.name} por: ${reason}`);
+        alert("Canje procesado.");
+        closeModal('modal-redeem-points');
+        renderClients();
+    }
+};
+
+let html5QrcodeScanner = null;
+window.startScanner = function() {
+    if(html5QrcodeScanner) return;
+    html5QrcodeScanner = new Html5Qrcode("qr-reader");
+    const resultDiv = document.getElementById('access-result');
+    resultDiv.style.display = 'none';
+    
+    html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText) => {
+            html5QrcodeScanner.pause();
+            const client = DB.ClientsDB.getById(decodedText);
+            resultDiv.style.display = 'block';
+            if(!client) {
+                resultDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+                resultDiv.style.color = 'var(--danger-color)';
+                resultDiv.innerText = "Error: Código QR no registrado.";
+            } else {
+                const isExpired = window.checkClientExpiration(client).isExpired;
+                if(isExpired) {
+                    resultDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+                    resultDiv.style.color = 'var(--danger-color)';
+                    resultDiv.innerText = `¡VENCIDO! - ${client.name} ${client.surname}`;
+                } else {
+                    resultDiv.style.background = 'rgba(16, 185, 129, 0.2)';
+                    resultDiv.style.color = 'var(--success-color)';
+                    resultDiv.innerText = `ACCESO APROBADO - ${client.name} ${client.surname}`;
+                }
+            }
+            setTimeout(() => { resultDiv.style.display = 'none'; html5QrcodeScanner.resume(); }, 3000);
+        },
+        (error) => {}
+    ).catch(err => alert("Error abriendo cámara: " + err));
+};
+
+window.stopScanner = function() {
+    if(html5QrcodeScanner) {
+        html5QrcodeScanner.stop().then(() => {
+            html5QrcodeScanner.clear();
+            html5QrcodeScanner = null;
+        });
+    }
+};
+
+window.openClientPortalLogin = function() {
+    document.getElementById('cp-login-phone').value = '';
+    document.getElementById('cp-login-error').style.display = 'none';
+    openModal('modal-client-portal-login');
+};
+
+let qrCodePortal = null;
+window.loginClientPortal = function() {
+    const phone = document.getElementById('cp-login-phone').value.trim();
+    const clients = DB.ClientsDB.getAll();
+    const client = clients.find(c => c.phone.replace(/[^0-9]/g, '') === phone.replace(/[^0-9]/g, '') && phone !== '');
+    
+    if(client) {
+        closeModal('modal-client-portal-login');
+        document.getElementById('login-view').classList.remove('active');
+        document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+        document.getElementById('view-client-portal').classList.add('active');
+        
+        document.getElementById('cp-name').innerText = `${client.name} ${client.surname}`;
+        document.getElementById('cp-plan').innerText = client.plan_type;
+        
+        const isExpired = window.checkClientExpiration(client).isExpired;
+        const daysLeft = window.checkClientExpiration(client).daysLeft;
+        document.getElementById('cp-days-left').innerText = isExpired ? 0 : daysLeft;
+        document.getElementById('cp-days-left').style.color = isExpired ? 'var(--danger-color)' : 'var(--primary-color)';
+        
+        document.getElementById('cp-fit-points').innerText = client.fit_points || 0;
+        
+        const ps = client.progress_sheet || {};
+        const getLatest = (prefix) => {
+            for(let i=5; i>=0; i--) {
+                const key = i===0 ? `${prefix}-initial` : `${prefix}-m${i}`;
+                if(ps[key]) return ps[key];
+            }
+            return '--';
+        };
+        document.getElementById('cp-last-weight').innerText = `${getLatest('weight')} Lb`;
+        document.getElementById('cp-last-fat').innerText = `${getLatest('fat-0')} %`;
+        
+        const qrContainer = document.getElementById('cp-qrcode');
+        qrContainer.innerHTML = '';
+        qrCodePortal = new QRCode(qrContainer, {
+            text: client.id,
+            width: 150,
+            height: 150,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+    } else {
+        document.getElementById('cp-login-error').style.display = 'block';
+    }
+};
+
+window.exitClientPortal = function() {
+    document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+    document.getElementById('login-view').classList.add('active');
+};
+
+// Trainers View Implementation
+window.renderTrainersView = function() {
+    const users = DB.UserDB.getAll();
+    const trainers = users; 
+    
+    const container = document.getElementById('trainer-cards-container');
+    container.innerHTML = '';
+    
+    if(trainers.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-secondary);">No hay entrenadores registrados.</p>';
+        return;
+    }
+    
+    trainers.forEach(trainer => {
+        const clients = DB.ClientsDB.getAll().filter(c => c.trainer_id === trainer.id);
+        
+        container.innerHTML += `
+            <div class="glass-panel" style="padding: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: 0.2s;" onclick="selectTrainer('${trainer.id}')" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='transparent'">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-color); display: flex; align-items: center; justify-content: center; font-weight: bold; overflow:hidden;">
+                        ${trainer.avatar ? `<img src="${trainer.avatar}" style="width:100%; height:100%; object-fit:cover;">` : trainer.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <h4 style="margin: 0;">${trainer.username}</h4>
+                        <small style="color: var(--text-secondary);">${clients.length} Clientes</small>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--text-secondary);"></i>
+            </div>
+        `;
+    });
+};
+
+window.selectTrainer = function(trainerId) {
+    const trainer = DB.UserDB.getAll().find(u => u.id === trainerId);
+    if(!trainer) return;
+    
+    document.getElementById('trainer-details-panel').style.display = 'flex';
+    document.getElementById('trainer-detail-name').innerText = trainer.username;
+    
+    const allClients = DB.ClientsDB.getAll();
+    const trainerClients = allClients.filter(c => c.trainer_id === trainerId);
+    
+    document.getElementById('trainer-detail-clients-count').innerText = `${trainerClients.length} Clientes`;
+    
+    const tbody = document.getElementById('trainer-detail-clients-tbody');
+    tbody.innerHTML = '';
+    
+    if(trainerClients.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No tiene clientes asignados.</td></tr>';
+    } else {
+        trainerClients.forEach(c => {
+            const isExpired = window.checkClientExpiration(c).isExpired;
+            const statusBadge = isExpired ? '<span style="color:var(--danger-color); font-size:0.8rem;"><i class="fas fa-exclamation-circle"></i> Vencido</span>' : '<span style="color:var(--success-color); font-size:0.8rem;"><i class="fas fa-check-circle"></i> Activo</span>';
+            tbody.innerHTML += `
+                <tr>
+                    <td>${c.name} ${c.surname}</td>
+                    <td>${c.plan_type}</td>
+                    <td>${new Date(c.payment_date).toLocaleDateString()} <br> ${statusBadge}</td>
+                </tr>
+            `;
+        });
+    }
+    
+    const meta_mensual = trainer.meta_mensual || 0;
+    const meta_semanal = trainer.meta_semanal || 0;
+    
+    let generatedMonthly = 0;
+    let generatedWeekly = 0;
+    
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const dayOfWeek = today.getDay();
+    const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const currentMonday = new Date(today);
+    currentMonday.setDate(today.getDate() - daysSinceMonday);
+    
+    trainerClients.forEach(c => {
+        const isExpired = window.checkClientExpiration(c).isExpired;
+        if (!isExpired) {
+            const pdate = new Date(c.payment_date);
+            const fee = Number(c.charge_amount || 0);
+            
+            generatedMonthly += fee;
+            
+            if (pdate >= currentMonday) {
+                generatedWeekly += fee;
+            }
+        }
+    });
+    
+    document.getElementById('trainer-detail-monthly-progress').innerText = `$${generatedMonthly.toFixed(2)} / $${meta_mensual}`;
+    document.getElementById('trainer-detail-weekly-progress').innerText = `$${generatedWeekly.toFixed(2)} / $${meta_semanal}`;
+    
+    let mPct = meta_mensual > 0 ? (generatedMonthly / meta_mensual) * 100 : 0;
+    if(mPct > 100) mPct = 100;
+    document.getElementById('trainer-detail-monthly-bar').style.width = `${mPct}%`;
+    
+    let wPct = meta_semanal > 0 ? (generatedWeekly / meta_semanal) * 100 : 0;
+    if(wPct > 100) wPct = 100;
+    document.getElementById('trainer-detail-weekly-bar').style.width = `${wPct}%`;
+};

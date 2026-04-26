@@ -19,6 +19,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- SheetJS for Excel Exports -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
 
@@ -32,8 +34,11 @@
                 <input type="text" id="login-username" placeholder="Usuario" required>
                 <input type="password" id="login-password" placeholder="Contraseña" required>
                 <div id="login-error" style="color: var(--danger-color); margin-bottom: 1rem; display: none;"></div>
-                <button type="submit" class="btn-primary" style="width: 100%;">
+                <button type="submit" class="btn-primary" style="width: 100%; margin-bottom: 0.5rem;">
                     <i class="fas fa-sign-in-alt"></i> Entrar
+                </button>
+                <button type="button" class="btn-secondary" style="width: 100%;" onclick="openClientPortalLogin()">
+                    <i class="fas fa-mobile-alt"></i> Acceso a Clientes
                 </button>
             </form>
         </div>
@@ -75,6 +80,12 @@
                 </a>
                 <a class="nav-item admin-only" data-target="receivables" id="nav-receivables" style="display: none;">
                     <i class="fas fa-hand-holding-usd"></i> Cuentas por Cobrar
+                </a>
+                <a class="nav-item" data-target="trainers" id="nav-trainers">
+                    <i class="fas fa-dumbbell"></i> Entrenadores
+                </a>
+                <a class="nav-item" data-target="access">
+                    <i class="fas fa-qrcode"></i> Control de Acceso
                 </a>
                 <a class="nav-item" data-target="messages">
                     <i class="fas fa-comments"></i> Mensajes
@@ -212,6 +223,112 @@
                     </div>
                 </section>
 
+                <!-- Access Control View -->
+                <section id="view-access" class="view-section">
+                    <div class="glass-panel" style="padding: 2rem; max-width: 600px; margin: 0 auto; text-align: center;">
+                        <h2>Control de Acceso</h2>
+                        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Escanee el código QR del cliente</p>
+                        <div id="qr-reader" style="width: 100%; margin-bottom: 1.5rem; border-radius: 8px; overflow: hidden; border: 2px solid var(--border-color);"></div>
+                        <div id="access-result" style="padding: 1rem; border-radius: 8px; font-weight: bold; font-size: 1.2rem; display: none;"></div>
+                        <button class="btn-primary" onclick="startScanner()" style="margin-top: 1rem;"><i class="fas fa-camera"></i> Activar Cámara</button>
+                        <button class="btn-danger" onclick="stopScanner()" style="margin-top: 1rem;"><i class="fas fa-stop"></i> Detener</button>
+                    </div>
+                </section>
+
+                <!-- Client Portal View (Full Screen) -->
+                <section id="view-client-portal" class="view-section" style="padding: 1rem;">
+                    <button class="btn-danger" style="margin-bottom: 1rem;" onclick="exitClientPortal()"><i class="fas fa-arrow-left"></i> Salir</button>
+                    <div class="glass-panel" style="padding: 1.5rem; text-align: center; max-width: 400px; margin: 0 auto;">
+                        <h2 id="cp-name">Nombre del Cliente</h2>
+                        <p id="cp-plan" style="color: var(--text-secondary); margin-bottom: 1rem;">Plan</p>
+                        
+                        <div style="background: rgba(255, 255, 255, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                            <h1 id="cp-days-left" style="font-size: 3rem; margin: 0; color: var(--primary-color);">0</h1>
+                            <p style="margin: 0; font-size: 0.9rem;">Días Restantes</p>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: space-between; background: rgba(212, 59, 219, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid var(--accent-color);">
+                            <div style="text-align: left;">
+                                <strong style="color: var(--accent-color);"><i class="fas fa-star"></i> Puntos Fit</strong>
+                                <p style="font-size: 0.8rem; margin: 0;">¡Canjéalos por premios!</p>
+                            </div>
+                            <h2 id="cp-fit-points" style="margin: 0; color: var(--accent-color);">0</h2>
+                        </div>
+
+                        <div id="cp-qrcode" style="display: flex; justify-content: center; background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;"></div>
+                        
+                        <div style="text-align: left;">
+                            <h3 style="margin-bottom: 0.5rem;"><i class="fas fa-chart-line"></i> Mi Último Récord</h3>
+                            <p style="margin:0;">Peso: <strong id="cp-last-weight">-- Lb</strong></p>
+                            <p style="margin:0;">% Grasa: <strong id="cp-last-fat">-- %</strong></p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Trainers View -->
+                <section id="view-trainers" class="view-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2>Panel de Entrenadores</h2>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; flex-wrap: wrap;">
+                        
+                        <!-- Trainer List Column -->
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <h3 style="color: var(--text-secondary); margin-bottom: 0.5rem;"><i class="fas fa-users-cog"></i> Equipo</h3>
+                            <div id="trainer-cards-container" style="display: flex; flex-direction: column; gap: 1rem; max-height: 70vh; overflow-y: auto; padding-right: 0.5rem;">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Trainer Details Column -->
+                        <div id="trainer-details-panel" class="glass-panel" style="display: none; padding: 1.5rem; flex-direction: column; gap: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <h2 id="trainer-detail-name" style="color: var(--primary-color);">Selecciona un Entrenador</h2>
+                                <span id="trainer-detail-clients-count" style="background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem;">0 Clientes</span>
+                            </div>
+
+                            <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
+                                <div class="glass-panel stat-card" style="padding: 1rem;">
+                                    <div class="stat-info">
+                                        <h3 id="trainer-detail-monthly-progress" style="font-size: 1.5rem;">$0 / $0</h3>
+                                        <span style="font-size: 0.8rem;">Progreso Mensual</span>
+                                        <div style="width: 100%; background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; margin-top: 0.5rem; overflow: hidden;">
+                                            <div id="trainer-detail-monthly-bar" style="height: 100%; background: var(--primary-color); width: 0%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="glass-panel stat-card" style="padding: 1rem;">
+                                    <div class="stat-info">
+                                        <h3 id="trainer-detail-weekly-progress" style="font-size: 1.5rem;">$0 / $0</h3>
+                                        <span style="font-size: 0.8rem;">Progreso Semanal</span>
+                                        <div style="width: 100%; background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; margin-top: 0.5rem; overflow: hidden;">
+                                            <div id="trainer-detail-weekly-bar" style="height: 100%; background: var(--success-color); width: 0%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h3 style="color: var(--text-secondary); margin-top: 1rem;"><i class="fas fa-list"></i> Clientes Asignados</h3>
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Cliente</th>
+                                            <th>Plan</th>
+                                            <th>Vencimiento</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="trainer-detail-clients-tbody">
+                                        <!-- Populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
                 <!-- Reports View -->
                 <section id="view-reports" class="view-section">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
@@ -263,13 +380,17 @@
                         </div>
                         <div class="glass-panel" style="padding: 1.5rem; margin-top: 1.5rem; grid-column: 1 / -1;">
                             <h3>Rendimiento de Entrenadores (vs Meta Mensual)</h3>
-                            <div style="height: 300px; width: 100%; margin-bottom: 2rem;">
+                            <div style="height: 300px; width: 100%;">
                                 <canvas id="chart-trainer-monthly"></canvas>
                             </div>
+                        </div>
+                        <div class="glass-panel" style="padding: 1.5rem; grid-column: 1 / -1;">
                             <h3>Avance Semanal de Entrenadores</h3>
-                            <div style="height: 250px; width: 100%; margin-bottom: 2rem;">
+                            <div style="height: 250px; width: 100%;">
                                 <canvas id="chart-trainer-weekly"></canvas>
                             </div>
+                        </div>
+                        <div class="glass-panel" style="padding: 1.5rem; grid-column: 1 / -1;">
                             <h3>Resumen Estadístico de Entrenadores</h3>
                             <div class="table-container">
                                 <table id="trainer-performance-table">
@@ -327,7 +448,7 @@
                                     <option value="">Seleccione un artículo...</option>
                                     <!-- Populated by JS -->
                                 </select>
-                                <input type="number" id="sale-item-qty" placeholder="Cantidad" min="1" value="1" style="max-width: 100px;">
+                                <input type="number" id="sale-item-qty" placeholder="Cantidad" min="0.01" step="0.01" value="1" style="max-width: 100px;">
                                 <button id="btn-add-to-cart" class="btn-primary">Añadir</button>
                             </div>
                             <div class="table-container mt-4">
@@ -365,6 +486,7 @@
                                 <select id="sale-payment-method" style="width: 100%;" required>
                                     <option value="Efectivo" selected>Caja / Efectivo</option>
                                     <option value="Tarjeta">Pago con Tarjeta</option>
+                                    <option value="Transferencia Bancaria">Transferencia Bancaria</option>
                                     <option value="Crédito">Cuentas por cobrar (Crédito)</option>
                                 </select>
                             </div>
@@ -583,6 +705,7 @@
                             <select id="v-daily-payment-method" required style="margin-bottom: 1.5rem; width: 100%;">
                                 <option value="Efectivo" selected>Pago en Efectivo</option>
                                 <option value="Tarjeta">Pago con Tarjeta</option>
+                                <option value="Transferencia Bancaria">Transferencia Bancaria</option>
                                 <option value="Crédito">Cuentas por cobrar (Crédito)</option>
                             </select>
                             
@@ -614,6 +737,9 @@
                 <div class="flex-row" style="margin-top: 1rem;">
                     <input type="number" id="item-qty" placeholder="Cantidad Inicial" required style="width: 100%;">
                 </div>
+                <label style="display:block; margin-top: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
+                    <input type="checkbox" id="item-is-weight"> Este artículo se vende por peso (ej. Lbs)
+                </label>
                 <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                     <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-item-form')">Cancelar</button>
                     <button type="submit" class="btn-success" style="flex:1;">Guardar</button>
@@ -637,7 +763,7 @@
                 </div>
                 <div class="flex-row" style="margin-top:1rem;">
                     <input type="number" id="client-age" placeholder="Edad" min="10" required>
-                    <input type="number" id="client-weight" placeholder="Peso (kg)" step="0.1" required>
+                    <input type="number" id="client-weight" placeholder="Peso (Lb)" step="0.1" required>
                 </div>
                 <div class="flex-row" style="margin-top:1rem;">
                     <input type="text" id="client-address" placeholder="Dirección" required>
@@ -650,11 +776,13 @@
                     <option value="Diario">Membresía Básica Pago Diario</option>
                     <option value="Personalizado">Entrenamiento Personalizado</option>
                 </select>
-                <select id="client-trainer" style="margin-top:1rem;" required>
+                <input type="number" id="client-charge-amount" placeholder="Tarifa Acordada a Cobrar ($)" step="0.01" style="margin-top:1rem; width: 100%;" required>
+                <select id="client-trainer" style="margin-top:1rem;">
                     <!-- Populated by JS -->
                 </select>
                 <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                     <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-client-form')">Cancelar</button>
+                    <button type="button" class="btn-primary" style="flex:1;" id="btn-charge-save-client">Cobrar y Guardar</button>
                     <button type="submit" class="btn-success" style="flex:1;">Guardar</button>
                 </div>
             </form>
@@ -671,7 +799,7 @@
             <form id="user-form">
                 <input type="hidden" id="user-id">
                 <input type="text" id="user-username" placeholder="Nombre de usuario" required>
-                <input type="password" id="user-password" placeholder="Contraseña nueva (Dejar vacío si no quieres cambiarla)" required>
+                <input type="password" id="user-password" placeholder="Contraseña nueva (Dejar vacío si no quieres cambiarla)">
                 <select id="user-role" required>
                     <option value="Staff">Staff / Entrenador (Solo ventas, inventario y clientes)</option>
                     <option value="Admin">Administrador (Acceso total)</option>
@@ -862,6 +990,7 @@
                 <select id="daily-payment-method" required style="margin-bottom: 1rem;">
                     <option value="Efectivo" selected>Efectivo</option>
                     <option value="Tarjeta">Tarjeta</option>
+                    <option value="Transferencia Bancaria">Transferencia Bancaria</option>
                 </select>
                 <div style="display: flex; gap: 1rem;">
                     <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-daily-pass')">Cancelar</button>
@@ -921,11 +1050,94 @@
                     <select id="renew-payment-method" required style="width: 100%;">
                         <option value="Efectivo" selected>Efectivo</option>
                         <option value="Tarjeta">Tarjeta</option>
+                        <option value="Transferencia Bancaria">Transferencia Bancaria</option>
                     </select>
                 </div>
                 <div style="display: flex; gap: 1rem;">
                     <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-renew-membership')">Cancelar</button>
                     <button type="submit" class="btn-success" style="flex:1;"><i class="fas fa-check-circle"></i> Procesar Pago</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="modal-overlay" id="modal-client-progress" style="z-index: 10002;">
+        <div class="glass-panel modal-content" style="max-width: 900px; width: 95%; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h3>Record de progreso NATJA FITNESS CENTER.</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-client-progress')"></i>
+            </div>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">Nombre y apellido: <strong id="progress-client-name" style="color: var(--primary-color);"></strong></p>
+            <form id="client-progress-form">
+                <input type="hidden" id="progress-client-id">
+                
+                <h4 style="background: var(--danger-color); color: white; text-align: center; margin-bottom: 0.5rem; padding: 0.25rem;">MEDIDAS CORPORALES.</h4>
+                <div class="table-container" style="margin-bottom: 1.5rem;">
+                    <table id="progress-measures-table" style="font-size: 0.8rem;">
+                        <thead>
+                            <tr style="text-align: center;">
+                                <th>MEDIDAS CM Y PULGADA.</th>
+                                <th>MEDIDA INICIAL.</th>
+                                <th>1ER. MES</th>
+                                <th>2DO. MES</th>
+                                <th>3ER. MES</th>
+                                <th>4TO. MES</th>
+                                <th>5TO. MES</th>
+                            </tr>
+                        </thead>
+                        <tbody id="progress-measures-tbody" style="text-align: center;">
+                            <!-- JS filled -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4 style="background: var(--danger-color); color: white; text-align: center; margin-bottom: 0.5rem; padding: 0.25rem;">PESO CORPORAL.</h4>
+                <div class="table-container" style="margin-bottom: 1.5rem;">
+                    <table id="progress-weight-table" style="font-size: 0.8rem;">
+                        <thead>
+                            <tr style="text-align: center;">
+                                <th>PESO.</th>
+                                <th>INICIAL.</th>
+                                <th>1ER. MES</th>
+                                <th>2DO. MES</th>
+                                <th>3ER. MES</th>
+                                <th>4TO. MES</th>
+                                <th>5TO. MES</th>
+                            </tr>
+                        </thead>
+                        <tbody id="progress-weight-tbody" style="text-align: center;">
+                             <!-- JS filled -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4 style="background: var(--danger-color); color: white; text-align: center; margin-bottom: 0.5rem; padding: 0.25rem;">PORCENTAJE DE GRASA</h4>
+                <div class="table-container" style="margin-bottom: 1.5rem;">
+                    <table id="progress-fat-table" style="font-size: 0.8rem;">
+                        <thead>
+                            <tr style="text-align: center;">
+                                <th>%GRASA</th>
+                                <th>INICIAL</th>
+                                <th>1ER MES.</th>
+                                <th>2DO. MES.</th>
+                                <th>3ER. MES</th>
+                                <th>4TO. MES.</th>
+                                <th>5TO. MES.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="progress-fat-tbody" style="text-align: center;">
+                            <!-- JS filled -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="font-weight: bold; font-size: 0.9rem;">OBSERVACIONES:</label>
+                    <textarea id="progress-observations" rows="2" style="width: 100%; border: 1px solid var(--border-color); background: rgba(0,0,0,0.1); color: var(--text-primary); border-radius: 4px; padding: 0.5rem;"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" class="btn-danger" style="flex:1;" onclick="closeModal('modal-client-progress')">Cerrar</button>
+                    <button type="submit" class="btn-success" style="flex:1;"><i class="fas fa-save"></i> Guardar Progreso</button>
                 </div>
             </form>
         </div>
@@ -944,6 +1156,58 @@
             </div>
             <div id="dm-reply-section" style="margin-top: 1rem;">
                 <small style="color: var(--text-secondary); cursor: pointer; text-decoration: underline;" onclick="document.getElementById('nav-messages').click(); closeModal('modal-direct-message');">Ir al Chat para Responder</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Portal Login Modal -->
+    <div class="modal-overlay" id="modal-client-portal-login">
+        <div class="glass-panel modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Acceso para Clientes</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-client-portal-login')"></i>
+            </div>
+            <div style="text-align: center; margin-bottom: 1rem;">
+                <i class="fas fa-user-circle" style="font-size: 3rem; color: var(--primary-color);"></i>
+                <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">Ingresa tu número de teléfono registrado para ver tu membresía y código de acceso.</p>
+            </div>
+            <input type="tel" id="cp-login-phone" placeholder="Ej: 555-1234" style="width: 100%; font-size: 1.2rem; text-align: center;">
+            <div id="cp-login-error" style="color: var(--danger-color); text-align: center; margin-top: 0.5rem; display: none;">Número no encontrado</div>
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button type="button" class="btn-primary" style="width: 100%;" onclick="loginClientPortal()">Ver mi Perfil</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Modal Admin -->
+    <div class="modal-overlay" id="modal-qr-view">
+        <div class="glass-panel modal-content" style="max-width: 350px; text-align: center;">
+            <div class="modal-header">
+                <h3>Código de Acceso</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-qr-view')"></i>
+            </div>
+            <p id="qr-client-name" style="font-weight: bold; margin-bottom: 1rem;"></p>
+            <div id="admin-qrcode" style="display: flex; justify-content: center; background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem;"></div>
+            <p style="font-size: 0.8rem; color: var(--text-secondary);">El cliente puede escanear este código en la entrada.</p>
+        </div>
+    </div>
+
+    <!-- Redeem Points Modal -->
+    <div class="modal-overlay" id="modal-redeem-points">
+        <div class="glass-panel modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Canjear Puntos Fit</h3>
+                <i class="fas fa-times modal-close" onclick="closeModal('modal-redeem-points')"></i>
+            </div>
+            <p>Cliente: <strong id="redeem-client-name"></strong></p>
+            <p>Puntos Disponibles: <strong id="redeem-points-balance" style="color: var(--accent-color); font-size: 1.2rem;">0</strong></p>
+            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 1rem 0;">
+            <input type="hidden" id="redeem-client-id">
+            <input type="number" id="redeem-amount" placeholder="Puntos a descontar" min="1" style="width: 100%; margin-bottom: 1rem;">
+            <input type="text" id="redeem-reason" placeholder="Premio entregado (Ej: Agua gratis)" style="width: 100%; margin-bottom: 1rem;">
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn-danger" style="flex:1;" onclick="closeModal('modal-redeem-points')">Cancelar</button>
+                <button class="btn-primary" style="flex:1;" onclick="processRedeemPoints()">Canjear</button>
             </div>
         </div>
     </div>

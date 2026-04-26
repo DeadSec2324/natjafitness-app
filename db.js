@@ -157,7 +157,8 @@ const InventoryDB = {
             description: item.description, 
             quantity: Number(item.quantity) || 0,
             cost_price: Number(item.cost_price) || 0,
-            price: Number(item.price) || 0
+            price: Number(item.price) || 0,
+            is_weight: Boolean(item.is_weight)
         };
         db.collection('gym_inventory').doc(newItem.id).set(newItem);
         return newItem;
@@ -318,9 +319,11 @@ const ClientsDB = {
             address: client.address,
             phone: client.phone,
             plan_type: client.plan_type,
+            charge_amount: Number(client.charge_amount) || 0,
             trainer_id: client.trainer_id || "",
             payment_date: client.payment_date || new Date().toISOString(),
-            extension_days: 0
+            extension_days: 0,
+            progress_sheet: client.progress_sheet || {}
         };
         db.collection('gym_clients').doc(newClient.id).set(newClient);
         return newClient;
