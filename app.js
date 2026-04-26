@@ -1380,13 +1380,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.checkClientExpiration = function(client) {
-    if (client.plan_type === 'Diario') return { isExpired: false, expiresToday: false };
+    if (client.plan_type === 'Diario') return { isExpired: false, expiresToday: false, daysLeft: 1 };
     
     let planDays = 0;
     if (client.plan_type === 'Mensual' || client.plan_type === 'Personalizado') planDays = 30;
     else if (client.plan_type === 'Quincenal') planDays = 15;
     
-    if (planDays === 0) return { isExpired: false, expiresToday: false };
+    if (planDays === 0) return { isExpired: false, expiresToday: false, daysLeft: 0 };
     
     const extensions = client.extension_days || 0;
     const totalDaysAllowed = planDays + extensions;
@@ -1400,10 +1400,12 @@ window.checkClientExpiration = function(client) {
     now.setHours(0,0,0,0);
     
     const timeDiff = now - expirationDate;
+    const daysLeft = timeDiff > 0 ? 0 : Math.ceil(Math.abs(timeDiff) / (1000 * 60 * 60 * 24));
     
     return {
         isExpired: timeDiff > 0,
-        expiresToday: timeDiff === 0
+        expiresToday: timeDiff === 0,
+        daysLeft: daysLeft
     };
 };
 
@@ -2281,7 +2283,12 @@ window.loginClientPortal = function() {
     
     if(client) {
         closeModal('modal-client-portal-login');
-        document.getElementById('login-view').classList.remove('active');
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('app-view').style.display = 'flex';
+        const sidebar = document.getElementById('sidebar');
+        if(sidebar) sidebar.style.display = 'none';
+        const topbar = document.querySelector('.top-bar');
+        if(topbar) topbar.style.display = 'none';
         document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
         document.getElementById('view-client-portal').classList.add('active');
         
@@ -2323,7 +2330,12 @@ window.loginClientPortal = function() {
 
 window.exitClientPortal = function() {
     document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
-    document.getElementById('login-view').classList.add('active');
+    document.getElementById('login-view').style.display = 'flex';
+    document.getElementById('app-view').style.display = 'none';
+    const sidebar = document.getElementById('sidebar');
+    if(sidebar) sidebar.style.display = '';
+    const topbar = document.querySelector('.top-bar');
+    if(topbar) topbar.style.display = '';
 };
 
 // Trainers View Implementation
