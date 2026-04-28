@@ -1120,7 +1120,7 @@ function renderDashboard() {
             `;
         });
     }
-}
+
 
 function renderInventory() {
     const inv = DB.InventoryDB.getAll();
