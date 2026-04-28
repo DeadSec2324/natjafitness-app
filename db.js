@@ -23,7 +23,8 @@ let localData = {
     gym_clients: [],
     gym_activity: [],
     gym_messages: [],
-    gym_receivables: []
+    gym_receivables: [],
+    gym_routines: []
 };
 
 // Listeners for realtime update
@@ -108,6 +109,13 @@ db.collection('gym_receivables').onSnapshot(snap => {
     }
     if(window.renderDashboard && document.getElementById('view-dashboard') && document.getElementById('view-dashboard').classList.contains('active')) {
         window.renderDashboard();
+    }
+});
+
+db.collection('gym_routines').onSnapshot(snap => {
+    localData.gym_routines = snap.docs.map(doc => doc.data());
+    if(window.renderRoutines && document.getElementById('view-routines') && document.getElementById('view-routines').classList.contains('active')) {
+        window.renderRoutines();
     }
 });
 
@@ -375,6 +383,29 @@ const MessagesDB = {
     }
 };
 
+const RoutinesDB = {
+    getAll: () => localData.gym_routines,
+    getById: (id) => localData.gym_routines.find(r => r.id === id),
+    add: (routine) => {
+        const item = {
+            id: generateId(),
+            name: routine.name,
+            description: routine.description,
+            exercises: routine.exercises || [], // array of {name, sets, reps}
+            created_by: routine.created_by,
+            date: new Date().toISOString()
+        };
+        db.collection('gym_routines').doc(item.id).set(item);
+        return item;
+    },
+    update: (id, updates) => {
+        db.collection('gym_routines').doc(id).update(updates);
+    },
+    remove: (id) => {
+        db.collection('gym_routines').doc(id).delete();
+    }
+};
+
 const SystemDB = {
     factoryReset: async () => {
         const collections = ['gym_inventory', 'gym_activity', 'gym_clients', 'gym_sales', 'gym_transactions', 'gym_messages', 'gym_receivables'];
@@ -398,5 +429,6 @@ window.DB = {
     ReceivablesDB,
     ClientsDB,
     ActivityDB,
-    MessagesDB
+    MessagesDB,
+    RoutinesDB
 };
