@@ -200,7 +200,7 @@ function setupModals() {
         btnAddItem.addEventListener('click', () => {
             document.getElementById('item-form').reset();
             document.getElementById('item-id').value = '';
-            document.getElementById('modal-item-title').innerText = 'Nuevo ArtÃ­culo';
+            document.getElementById('modal-item-title').innerText = 'Nuevo Artículo';
             document.getElementById('modal-item-form').classList.add('active');
         });
     }
@@ -296,17 +296,17 @@ function setupForms() {
             
             if (id) {
                 DB.InventoryDB.update(id, item);
-                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `EditÃ³ el producto ${item.name}`);
+                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `Editó el producto ${item.name}`);
             } else {
                 DB.InventoryDB.add(item);
-                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `AÃ±adiÃ³ el producto nuevo ${item.name}`);
+                if(currentUser.role === 'Staff') DB.ActivityDB.log(currentUser.username, `Añadió el producto nuevo ${item.name}`);
             }
             closeModal('modal-item-form');
             renderInventory();
         });
     }
 
-    // Modal de IntercepciÃ³n de AutorizaciÃ³n
+    // Modal de Intercepción de Autorización
     const authConfirmForm = document.getElementById('auth-confirm-form');
     if(authConfirmForm) {
         authConfirmForm.addEventListener('submit', (e) => {
@@ -329,18 +329,21 @@ function setupForms() {
                 }, 500);
 
             } else {
-                alert("ContraseÃ±a incorrecta. Intenta de nuevo.");
+                alert("Contraseña incorrecta. Intenta de nuevo.");
             }
         });
     }
     
     // User Form
-    document.getElementById('btn-add-user')?.addEventListener('click', () => {
-        document.getElementById('modal-user-title').innerText = 'Nuevo Usuario';
-        document.getElementById('user-form').reset();
-        document.getElementById('user-id').value = '';
-        document.getElementById('modal-user-form').classList.add('active');
-    });
+    const btnAddUser = document.getElementById('btn-add-user');
+    if (btnAddUser) {
+        btnAddUser.addEventListener('click', () => {
+            document.getElementById('modal-user-title').innerText = 'Nuevo Usuario';
+            document.getElementById('user-form').reset();
+            document.getElementById('user-id').value = '';
+            document.getElementById('modal-user-form').classList.add('active');
+        });
+    }
     const userForm = document.getElementById('user-form');
     if(userForm) {
         userForm.addEventListener('submit', async (e) => {
@@ -376,7 +379,7 @@ function setupForms() {
                 if (id) {
                     DB.UserDB.update(id, usrData);
                 } else {
-                    if(!pwd) throw new Error("La contraseÃ±a es obligatoria para usuarios nuevos");
+                    if(!pwd) throw new Error("La contraseña es obligatoria para usuarios nuevos");
                     DB.UserDB.add(usrData);
                 }
                 closeModal('modal-user-form');
@@ -435,17 +438,17 @@ function setupForms() {
                 let currentClientId = id;
                 if (id) {
                     DB.ClientsDB.update(id, client);
-                    if(authUser.role === 'Staff') DB.ActivityDB.log(authUser.username, `EditÃ³ al cliente ${client.name} ${client.surname}`);
+                    if(authUser.role === 'Staff') DB.ActivityDB.log(authUser.username, `Editó al cliente ${client.name} ${client.surname}`);
                 } else {
                     const newClient = DB.ClientsDB.add(client);
                     currentClientId = newClient.id;
-                    if(authUser.role === 'Staff') DB.ActivityDB.log(authUser.username, `RegistrÃ³ al nuevo cliente ${client.name} ${client.surname}`);
+                    if(authUser.role === 'Staff') DB.ActivityDB.log(authUser.username, `Registró al nuevo cliente ${client.name} ${client.surname}`);
                 }
                 
                 if (chargeAndSaveMode && client.charge_amount > 0) {
                     try {
                         DB.SalesDB.registerMembershipPayment(authUser.id, `${client.name} ${client.surname}`, client.plan_type, client.charge_amount, "Efectivo");
-                        DB.ActivityDB.log(authUser.username, `RegistrÃ³ pago de membresÃ­a de $${client.charge_amount.toFixed(2)} para ${client.name} ${client.surname} (Cobrar y Guardar)`);
+                        DB.ActivityDB.log(authUser.username, `Registró pago de membresía de $${client.charge_amount.toFixed(2)} para ${client.name} ${client.surname} (Cobrar y Guardar)`);
                         
                         // Update the payment date starting today
                         const now = new Date();
@@ -491,7 +494,7 @@ function setupForms() {
                 DB.InventoryDB.adjustStock(id, amount, currentUser.id, type);
                 if(currentUser.role === 'Staff') {
                     const item = DB.InventoryDB.getById(id);
-                    DB.ActivityDB.log(currentUser.username, `RegistrÃ³ una ${type === 'IN' ? 'entrada' : 'salida'} manual de ${Math.abs(amount)} unidades en ${item.name}`);
+                    DB.ActivityDB.log(currentUser.username, `Registró una ${type === 'IN' ? 'entrada' : 'salida'} manual de ${Math.abs(amount)} unidades en ${item.name}`);
                 }
                 closeModal('modal-stock-form');
                 renderInventory();
@@ -513,14 +516,14 @@ function setupForms() {
             if(!item) return;
             
             if(item.quantity < qty) {
-                alert(`OUT OF STOCK!\n\nNo hay suficiente inventario de "${item.name}".\nPor favor, solicita a un Administrador que ingrese mÃ¡s stock para continuar.`);
+                alert(`OUT OF STOCK!\n\nNo hay suficiente inventario de "${item.name}".\nPor favor, solicita a un Administrador que ingrese más stock para continuar.`);
                 return;
             }
             
             const existing = cart.find(c => c.id === itemId);
             if(existing) {
                 if (item.quantity < existing.qty + qty) {
-                    alert(`OUT OF STOCK!\n\nNo hay suficiente inventario de "${item.name}".\nPor favor, solicita a un Administrador que ingrese mÃ¡s stock para continuar.`);
+                    alert(`OUT OF STOCK!\n\nNo hay suficiente inventario de "${item.name}".\nPor favor, solicita a un Administrador que ingrese más stock para continuar.`);
                     return;
                 }
                 existing.qty += qty;
@@ -561,19 +564,20 @@ function setupForms() {
     if (btnProcess) {
         btnProcess.addEventListener('click', () => {
             if(cart.length === 0) {
-                alert("El carrito estÃ¡ vacÃ­o");
+                alert("El carrito está vacío");
                 return;
             }
             
             const paymentMethod = document.getElementById('sale-payment-method').value || 'Efectivo';
-            if (paymentMethod === 'CrÃ©dito') {
+            if (paymentMethod === 'Crédito') {
                 window.pendingCreditData = {
                     isDailyPass: false,
                     cartClone: [...cart],
                     total_amount: cart.reduce((sum, c) => sum + c.subtotal, 0),
                     total_cost: cart.reduce((sum, c) => {
                         const item = DB.InventoryDB.getById(c.id);
-                        return sum + ((item?.cost_price || 0) * c.qty);
+                        const currentCost = item && typeof item.cost_price !== 'undefined' ? item.cost_price : 0;
+                        return sum + (currentCost * c.qty);
                     }, 0),
                     desc: cart.map(c => `${c.qty}x ${c.name}`).join(' + ')
                 };
@@ -601,9 +605,9 @@ function setupForms() {
                     DB.SalesDB.processSale(authUser.id, cart, passMethodForNormal);
                     
                     const itemNames = cart.map(c => `${c.qty} ${c.name}`).join(', ');
-                    DB.ActivityDB.log(authUser.username, `ProcesÃ³ venta de: ${itemNames} (${paymentMethod})`);
+                    DB.ActivityDB.log(authUser.username, `Procesó venta de: ${itemNames} (${paymentMethod})`);
                     
-                    alert("Venta procesada con Ã©xito");
+                    alert("Venta procesada con éxito");
                     cart = [];
                     renderCart();
                     document.getElementById('btn-print-invoice').disabled = false;
@@ -611,7 +615,7 @@ function setupForms() {
                     populateSalesSelect();
                 } catch (error) {
                     if(error.message.includes("Stock insuficiente")) {
-                        alert(`OUT OF STOCK!\n\nEl sistema detectÃ³ que no hay inventario suficiente para procesar la venta.\nPor favor, solicita a un Administrador que ajuste el stock antes de continuar.`);
+                        alert(`OUT OF STOCK!\n\nEl sistema detectó que no hay inventario suficiente para procesar la venta.\nPor favor, solicita a un Administrador que ajuste el stock antes de continuar.`);
                     } else {
                         alert("Error al procesar: " + error.message);
                     }
@@ -639,8 +643,8 @@ function setupForms() {
                 if(client) {
                     const currentExt = client.extension_days || 0;
                     DB.ClientsDB.update(id, { extension_days: currentExt + days });
-                    if(currentUser) DB.ActivityDB.log(currentUser.username, `OtorgÃ³ ${days} dÃ­as de prÃ³rroga a ${client.name} ${client.surname}`);
-                    alert(`PrÃ³rroga de ${days} dÃ­as asignada con Ã©xito a ${client.name}.`);
+                    if(currentUser) DB.ActivityDB.log(currentUser.username, `Otorgó ${days} días de prórroga a ${client.name} ${client.surname}`);
+                    alert(`Prórroga de ${days} días asignada con éxito a ${client.name}.`);
                     closeModal('modal-extension-form');
                     renderClients();
                 }
@@ -669,8 +673,8 @@ function setupForms() {
                     }
                 }
 
-                if(authUser.role === 'Staff' || authUser.role === 'Admin') DB.ActivityDB.log(authUser.username, `CobrÃ³ Acceso Diario de $${price.toFixed(2)} a ${clientName} (${method})`);
-                alert(`Pase procesado con Ã©xito para ${clientName}.`);
+                if(authUser.role === 'Staff' || authUser.role === 'Admin') DB.ActivityDB.log(authUser.username, `Cobró Acceso Diario de $${price.toFixed(2)} a ${clientName} (${method})`);
+                alert(`Pase procesado con éxito para ${clientName}.`);
                 closeModal('modal-daily-pass');
                 
                 if(document.getElementById('view-dashboard') && document.getElementById('view-dashboard').classList.contains('active')) renderDashboard();
@@ -712,7 +716,7 @@ function setupForms() {
                         client.extension_days = 0;
                         DB.ClientsDB.update(clientId, client);
                         
-                        DB.ActivityDB.log(authUser.username, `RegistrÃ³ pago de membresÃ­a de $${price.toFixed(2)} para ${clientName}`);
+                        DB.ActivityDB.log(authUser.username, `Registró pago de membresía de $${price.toFixed(2)} para ${clientName}`);
                         
                         closeModal('modal-renew-membership');
                         alert(`Pago registrado exitosamente. La nueva fecha de cobro ha sido actualizada.`);
@@ -720,22 +724,25 @@ function setupForms() {
                         renderDashboard();
                     }
                 } catch(error) {
-                    alert("Error procesando pago de membresÃ­a: " + error.message);
+                    alert("Error procesando pago de membresía: " + error.message);
                 }
             });
         });
     }
     
-    // CrÃ©ditos Events
-    document.getElementById('btn-generate-otp')?.addEventListener('click', () => {
-        const code = Math.floor(1000 + Math.random() * 9000).toString();
+    // Créditos Events
+    const btnGenerateOtp = document.getElementById('btn-generate-otp');
+    if (btnGenerateOtp) {
+        btnGenerateOtp.addEventListener('click', () => {
+            const code = Math.floor(1000 + Math.random() * 9000).toString();
         const adminUser = DB.UserDB.getAll().find(u => u.username === 'admin');
         if(adminUser) {
             DB.UserDB.update(adminUser.id, { active_otp: code });
             document.getElementById('current-otp-display').innerText = code;
-            alert("CÃ³digo OTP generado con Ã©xito. VÃ¡lido para 1 uso.");
+            alert("Código OTP generado con éxito. Válido para 1 uso.");
         }
-    });
+        });
+    }
 
     const otpForm = document.getElementById('otp-staff-form');
     if (otpForm) {
@@ -751,7 +758,7 @@ function setupForms() {
                 document.getElementById('otp-input').value = '';
                 window.openCreditInfoModal();
             } else {
-                alert('CÃ³digo incorrecto o ya utilizado.');
+                alert('Código incorrecto o ya utilizado.');
             }
         });
     }
@@ -799,8 +806,8 @@ function setupForms() {
                     user_id: currentUser ? currentUser.username : 'Sistema'
                 });
                 
-                DB.ActivityDB.log(currentUser ? currentUser.username : 'Sistema', `AprobÃ³ Venta a CrÃ©dito por $${parseFloat(pd.total_amount).toFixed(2)} a ${clientName}`);
-                alert('CrÃ©dito otorgado exitosamente.');
+                DB.ActivityDB.log(currentUser ? currentUser.username : 'Sistema', `Aprobó Venta a Crédito por $${parseFloat(pd.total_amount).toFixed(2)} a ${clientName}`);
+                alert('Crédito otorgado exitosamente.');
                 closeModal('modal-credit-info');
                 
                 if(document.getElementById('view-daily-pass') && document.getElementById('view-daily-pass').classList.contains('active')) {
@@ -811,7 +818,7 @@ function setupForms() {
                 window.pendingCreditData = null;
                 if (currentUser && currentUser.role === 'Admin') renderDashboard();
             } catch (err) {
-                alert("Error al procesar el crÃ©dito: " + err.message);
+                alert("Error al procesar el crédito: " + err.message);
             }
         });
     }
@@ -829,7 +836,7 @@ function setupForms() {
                 const saleRecord = {
                      id: `PAGO-CREDITO-${Date.now().toString(36).substring(0,5).toUpperCase()}`,
                      user_id: currentUser ? currentUser.username : 'Admin',
-                     items: [{ name: `CancelaciÃ³n Deuda: ${r.client_name}`, qty: 1 }],
+                     items: [{ name: `Cancelación Deuda: ${r.client_name}`, qty: 1 }],
                      total_cost: 0,
                      total_amount: r.total_amount,
                      profit: r.total_amount,
@@ -837,12 +844,12 @@ function setupForms() {
                      date: new Date().toISOString()
                 };
                 db.collection('gym_sales').doc(saleRecord.id).set(saleRecord);
-                DB.ActivityDB.log(currentUser.username, `CobrÃ³ Cuenta de $${parseFloat(r.total_amount).toFixed(2)} a ${r.client_name} (${status})`);
+                DB.ActivityDB.log(currentUser.username, `Cobró Cuenta de $${parseFloat(r.total_amount).toFixed(2)} a ${r.client_name} (${status})`);
                 
                 closeModal('modal-process-receivable');
                 if(window.renderReceivables) window.renderReceivables();
                 renderDashboard();
-                alert("Cobro procesado e ingresado a las transacciones del dÃ­a.");
+                alert("Cobro procesado e ingresado a las transacciones del día.");
             }
         });
     }
@@ -866,7 +873,8 @@ window.openCreditInfoModal = function() {
             sel.innerHTML += `<option value="${c.id}">${c.name} ${c.surname}</option>`;
         });
     }
-    document.getElementById('credit-info-form')?.reset();
+    const creditInfoForm = document.getElementById('credit-info-form');
+    if (creditInfoForm) creditInfoForm.reset();
     if(window.pendingCreditData.isDailyPass && window.pendingCreditData.pendingClientName) {
         document.getElementById('credit-new-client').value = window.pendingCreditData.pendingClientName;
     }
@@ -998,11 +1006,10 @@ function renderDashboard() {
             if (dueReceivables.length > 0) {
                 window.hasNotifiedReceivables = true;
                 setTimeout(() => {
-                    alert(`Â¡AtenciÃ³n! Tienes ${dueReceivables.length} cuenta(s) por cobrar con fecha de cobro vencida o para el dÃ­a de HOY.`);
-                    if (window.triggerDeviceNotification) window.triggerDeviceNotification("Cuentas Pendientes", "Hay clientes con deudas por cobrar el dÃ­a de hoy.");
+                    alert(`¡Atención! Tienes ${dueReceivables.length} cuenta(s) por cobrar con fecha de cobro vencida o para el día de HOY.`);
+                    if (window.triggerDeviceNotification) window.triggerDeviceNotification("Cuentas Pendientes", "Hay clientes con deudas por cobrar el día de hoy.");
                 }, 1000);
             }
-        }
         }
     }
     
@@ -1035,15 +1042,15 @@ function renderDashboard() {
             
             atRiskClients.forEach(c => {
                 const phone = c.phone ? c.phone.replace(/[^0-9]/g, '') : '';
-                const waLink = phone ? `https://wa.me/${phone}?text=Hola ${c.name}, te extraÃ±amos en el gimnasio. Â¡Esperamos verte pronto!` : '#';
+                const waLink = phone ? `https://wa.me/${phone}?text=Hola ${c.name}, te extrañamos en el gimnasio. ¡Esperamos verte pronto!` : '#';
                 
                 radarTbody.innerHTML += `
                     <tr>
                         <td><strong>${c.name} ${c.surname}</strong></td>
                         <td>${c.phone || 'N/A'}</td>
-                        <td style="color: var(--danger-color); font-weight: bold;">Hace ${c._abandon_days} dÃ­as</td>
+                        <td style="color: var(--danger-color); font-weight: bold;">Hace ${c._abandon_days} días</td>
                         <td>
-                            ${phone ? `<a href="${waLink}" target="_blank" class="btn-primary" style="padding: 0.3rem 0.6rem; text-decoration: none; font-size: 0.8rem;"><i class="fab fa-whatsapp"></i> Contactar</a>` : 'Sin nÃºmero'}
+                            ${phone ? `<a href="${waLink}" target="_blank" class="btn-primary" style="padding: 0.3rem 0.6rem; text-decoration: none; font-size: 0.8rem;"><i class="fab fa-whatsapp"></i> Contactar</a>` : 'Sin número'}
                         </td>
                     </tr>
                 `;
@@ -1087,7 +1094,8 @@ function renderDashboard() {
         allSales.forEach(s => {
             s.items.forEach(i => {
                 if(!productProfits[i.id]) productProfits[i.id] = 0;
-                const currentCost = DB.InventoryDB.getById(i.id)?.cost_price || 0;
+                const currentProduct = DB.InventoryDB.getById(i.id);
+                const currentCost = currentProduct && typeof currentProduct.cost_price !== 'undefined' ? currentProduct.cost_price : 0;
                 const profitForItem = i.subtotal - (currentCost * i.qty);
                 productProfits[i.id] += profitForItem;
             });
@@ -1120,7 +1128,7 @@ function renderDashboard() {
             `;
         });
     }
-
+}
 
 function renderInventory() {
     const inv = DB.InventoryDB.getAll();
@@ -1130,7 +1138,7 @@ function renderInventory() {
     tbody.innerHTML = '';
     
     if(inv.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay artÃ­culos. AÃ±ade uno.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay artículos. Añade uno.</td></tr>';
         return;
     }
     
@@ -1162,7 +1170,7 @@ function renderSales() {
 function populateSalesSelect() {
     const select = document.getElementById('sale-item-select');
     if(!select) return;
-    select.innerHTML = '<option value="">Seleccione un artÃ­culo...</option>';
+    select.innerHTML = '<option value="">Seleccione un artículo...</option>';
     DB.InventoryDB.getAll().forEach(i => {
         if(i.quantity > 0) {
             select.innerHTML += `<option value="${i.id}">${i.name} ($${parseFloat(i.price).toFixed(2)} - Stock: ${i.quantity})</option>`;
@@ -1177,7 +1185,7 @@ function renderCart() {
     let total = 0;
     
     if(cart.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">El carrito estÃ¡ vacÃ­o</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">El carrito está vacío</td></tr>';
     } else {
         cart.forEach((c, index) => {
             total += c.subtotal;
@@ -1234,13 +1242,13 @@ function renderUsers() {
             <tr>
                 <td><span class="status-dot ${statusClass}"></span> <strong>${u.username}</strong></td>
                 <td>${u.role} ${priceTag}</td>
-                <td><small style="color:var(--text-secondary)">1Âº Entrada Hoy: ${firstLog}<br>Ãšlt. AcciÃ³n: ${lastLog}</small></td>
+                <td><small style="color:var(--text-secondary)">1º Entrada Hoy: ${firstLog}<br>Últ. Acción: ${lastLog}</small></td>
                 <td class="action-btns">
                     ${u.username !== 'admin' ? `
                         <button class="btn-icon" style="color: var(--primary-color)" onclick="editUser('${u.id}')" title="Editar"><i class="fas fa-edit"></i></button>
                         <button class="btn-icon" style="color: var(--danger-color)" onclick="deleteUser('${u.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>
                     ` : `
-                        <button class="btn-icon" style="color: var(--primary-color)" onclick="editUser('${u.id}')" title="Editar ContraseÃ±a"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" style="color: var(--primary-color)" onclick="editUser('${u.id}')" title="Editar Contraseña"><i class="fas fa-edit"></i></button>
                     `}
                 </td>
             </tr>
@@ -1332,7 +1340,7 @@ window.checkDirectMessages = function(snap) {
                     
                     openModal('modal-direct-message');
                     if(window.triggerDeviceNotification) {
-                        window.triggerDeviceNotification("Â¡Urgente!", "Mensaje de " + msg.sender);
+                        window.triggerDeviceNotification("¡Urgente!", "Mensaje de " + msg.sender);
                     }
                 }
             }
@@ -1356,7 +1364,7 @@ window.updateOnlineUsersPanel = function() {
             }
             
             const statusClass = u.is_online ? 'status-online' : 'status-offline';
-            const statusText = u.is_online ? 'En LÃ­nea' : 'Desconectado';
+            const statusText = u.is_online ? 'En Línea' : 'Desconectado';
             onlineList.innerHTML += `
                <div style="display: flex; align-items: center; gap: 0.5rem;">
                    <span class="status-dot ${statusClass}"></span>
@@ -1394,7 +1402,7 @@ window.renderMessages = function() {
         
         let readIndicator = '';
         if(isMe && isDM) {
-             readIndicator = m.read ? '<span style="font-size:0.75rem; color:var(--success-color); margin-top:2px;">âœ”âœ” LeÃ­do</span>' : '<span style="font-size:0.75rem; color:rgba(255,255,255,0.7); margin-top:2px;">âœ” Entregado</span>';
+             readIndicator = m.read ? '<span style="font-size:0.75rem; color:var(--success-color); margin-top:2px;">✓✓ Leído</span>' : '<span style="font-size:0.75rem; color:rgba(255,255,255,0.7); margin-top:2px;">✓ Entregado</span>';
         }
 
         box.innerHTML += `
@@ -1484,7 +1492,7 @@ function renderClients() {
     if (expiringTodayNames.length > 0 && !hasAlertedExpirationsToday && currentUser && currentUser.role === 'Admin') {
         hasAlertedExpirationsToday = true;
         setTimeout(() => {
-            alert("Â¡AtenciÃ³n! Los siguientes clientes vencen el dÃ­a de HOY:\n\n- " + expiringTodayNames.join("\n- "));
+            alert("¡Atención! Los siguientes clientes vencen el día de HOY:\n\n- " + expiringTodayNames.join("\n- "));
         }, 500);
         DB.ActivityDB.log("Sistema", "Vencimiento HOY de: " + expiringTodayNames.join(", "));
     }
@@ -1516,14 +1524,14 @@ window.showClientsCategory = function(category) {
     }
     
     if(filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay clientes en esta categorÃ­a.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay clientes en esta categoría.</td></tr>';
     } else {
         filtered.forEach(c => {
             const expRules = window.checkClientExpiration(c);
             const isExpired = expRules.isExpired;
             
             const pdate = new Date(c.payment_date).toLocaleDateString();
-            const extBadge = c.extension_days ? `<span style="font-size:0.75rem; color:var(--text-secondary); margin-left: 5px;">(+${c.extension_days}d prÃ³rroga)</span>` : '';
+            const extBadge = c.extension_days ? `<span style="font-size:0.75rem; color:var(--text-secondary); margin-left: 5px;">(+${c.extension_days}d prórroga)</span>` : '';
             const expBadge = isExpired ? '<span style="color: white; background: var(--danger-color); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-left: 5px;">Vencido</span>' : '';
             
             const trainerObj = c.trainer_id ? DB.UserDB.getAll().find(u => u.id === c.trainer_id) : null;
@@ -1534,18 +1542,18 @@ window.showClientsCategory = function(category) {
             tbody.innerHTML += `
                 <tr style="${isExpired && category !== 'Vencidos' ? 'background: rgba(239, 68, 68, 0.05);' : ''}">
                     <td><strong>${c.name} ${c.surname}</strong>${extBadge}<br><small style="color:var(--accent-color)">Entrenador: ${trainerName}</small>${ptsBadge}</td>
-                    <td>${c.age} aÃ±os / ${c.weight} Lb</td>
+                    <td>${c.age} años / ${c.weight} Lb</td>
                     <td>${c.address} <br> <small style="color:var(--text-secondary)"><i class="fas fa-phone"></i> ${c.phone}</small></td>
                     <td>${c.plan_type}</td>
                     <td>${pdate} ${expBadge}</td>
                     <td class="action-btns admin-only">
                         <button class="btn-icon" style="color: #25D366;" onclick="openWhatsApp('${c.phone}', '${c.name.replace(/'/g, "\\'")}')" title="Recordatorio WhatsApp"><i class="fab fa-whatsapp"></i></button>
-                        <button class="btn-icon" style="color: var(--text-secondary);" onclick="openQRView('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}')" title="Ver CÃ³digo QR"><i class="fas fa-qrcode"></i></button>
+                        <button class="btn-icon" style="color: var(--text-secondary);" onclick="openQRView('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}')" title="Ver Código QR"><i class="fas fa-qrcode"></i></button>
                         ${pts > 0 ? `<button class="btn-icon" style="color: var(--accent-color);" onclick="openRedeemPoints('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}', ${pts})" title="Canjear Puntos Fit"><i class="fas fa-star"></i></button>` : ''}
                         ${c.plan_type === 'Diario' ? `<button class="btn-icon" style="color: var(--success-color);" onclick="openDailyPassModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}', '${c.trainer_id || ''}')" title="Cobrar Pase Diario"><i class="fas fa-ticket-alt"></i></button>` : ''}
-                        ${c.plan_type !== 'Diario' ? `<button class="btn-icon" style="color: var(--success-color);" onclick="openRenewModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}', '${c.plan_type}')" title="Pagar MembresÃ­a"><i class="fas fa-dollar-sign"></i></button>` : ''}
+                        ${c.plan_type !== 'Diario' ? `<button class="btn-icon" style="color: var(--success-color);" onclick="openRenewModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}', '${c.plan_type}')" title="Pagar Membresía"><i class="fas fa-dollar-sign"></i></button>` : ''}
                         <button class="btn-icon" style="color: #6366f1;" onclick="openProgressModal('${c.id}')" title="Ver Progreso"><i class="fas fa-clipboard-list"></i></button>
-                        <button class="btn-icon" style="color: #f59e0b;" onclick="openExtensionModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}')" title="Otorgar PrÃ³rroga"><i class="fas fa-calendar-plus"></i></button>
+                        <button class="btn-icon" style="color: #f59e0b;" onclick="openExtensionModal('${c.id}', '${c.name.replace(/'/g, "\\'")} ${c.surname.replace(/'/g, "\\'")}')" title="Otorgar Prórroga"><i class="fas fa-calendar-plus"></i></button>
                         <button class="btn-icon" onclick="editClient('${c.id}')" title="Editar"><i class="fas fa-edit"></i></button>
                         ${currentUser.role === 'Admin' ? `<button class="btn-icon" style="color: var(--danger-color)" onclick="deleteClient('${c.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
                     </td>
@@ -1570,7 +1578,7 @@ window.editItem = function(id) {
     document.getElementById('item-qty').value = item.quantity;
     document.getElementById('item-is-weight').checked = item.is_weight || false;
     
-    document.getElementById('modal-item-title').innerText = 'Editar ArtÃ­culo';
+    document.getElementById('modal-item-title').innerText = 'Editar Artículo';
     document.getElementById('modal-item-form').classList.add('active');
 }
 
@@ -1587,7 +1595,7 @@ window.adjustStockForm = function(id) {
 }
 
 window.deleteItem = function(id) {
-    if(confirm('Â¿Seguro que desea eliminar este artÃ­culo?')) {
+    if(confirm('¿Seguro que desea eliminar este artículo?')) {
         DB.InventoryDB.remove(id);
         renderInventory();
     }
@@ -1600,10 +1608,10 @@ window.deleteUser = function(id) {
         return;
     }
     if (currentUser && currentUser.id === id) {
-        alert("No puedes eliminar tu propio usuario mientras estÃ¡s en sesiÃ³n.");
+        alert("No puedes eliminar tu propio usuario mientras estás en sesión.");
         return;
     }
-    if(confirm('Â¿Seguro que desea eliminar este usuario?')) {
+    if(confirm('¿Seguro que desea eliminar este usuario?')) {
         DB.UserDB.remove(id);
         renderUsers();
     }
@@ -1631,7 +1639,7 @@ window.editClient = function(id) {
 
 window.exportReportsToExcel = function() {
     if (typeof XLSX === 'undefined') {
-        alert("La librerÃ­a de exportaciÃ³n aÃºn no ha cargado (o no hay conexiÃ³n a internet). Intenta nuevamente en unos segundos.");
+        alert("La librería de exportación aún no ha cargado (o no hay conexión a internet). Intenta nuevamente en unos segundos.");
         return;
     }
 
@@ -1647,10 +1655,10 @@ window.exportReportsToExcel = function() {
     const formatSaleRow = (s) => {
         const itemNames = (s.items || []).map(i => `${i.qty || 1}x ${i.name || 'Desconocido'}`).join(' + ');
         return {
-            "Fecha EmisiÃ³n": new Date(s.date).toLocaleString(),
+            "Fecha Emisión": new Date(s.date).toLocaleString(),
             "ID Venta": s.id,
-            "DescripciÃ³n de ArtÃ­culos": itemNames,
-            "MÃ©todo de Pago": s.payment_method || 'Desconocido',
+            "Descripción de Artículos": itemNames,
+            "Método de Pago": s.payment_method || 'Desconocido',
             "Estado": s.status === 'Cancelada' ? 'Cancelada' : 'Completada',
             "Total Generado ($)": parseFloat(s.total_amount || 0).toFixed(2)
         };
@@ -1670,8 +1678,8 @@ window.exportReportsToExcel = function() {
     });
 
     if(exportDaily.length === 0) exportDaily.push({"Mensaje": "Sin ventas registradas hoy"});
-    if(exportWeekly.length === 0) exportWeekly.push({"Mensaje": "Sin ventas en la Ãºltima semana"});
-    if(exportMonthly.length === 0) exportMonthly.push({"Mensaje": "Sin ventas en el Ãºltimo mes"});
+    if(exportWeekly.length === 0) exportWeekly.push({"Mensaje": "Sin ventas en la última semana"});
+    if(exportMonthly.length === 0) exportMonthly.push({"Mensaje": "Sin ventas en el último mes"});
 
     const wsDaily = XLSX.utils.json_to_sheet(exportDaily);
     const wsWeekly = XLSX.utils.json_to_sheet(exportWeekly);
@@ -1679,15 +1687,15 @@ window.exportReportsToExcel = function() {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, wsDaily, "Diario (Hoy)");
-    XLSX.utils.book_append_sheet(wb, wsWeekly, "Semanal (Ãšltimos 7 dÃ­as)");
-    XLSX.utils.book_append_sheet(wb, wsMonthly, "Mensual (Ãšltimos 30 dÃ­as)");
+    XLSX.utils.book_append_sheet(wb, wsWeekly, "Semanal (Últimos 7 días)");
+    XLSX.utils.book_append_sheet(wb, wsMonthly, "Mensual (Últimos 30 días)");
 
     XLSX.writeFile(wb, `Reporte_Estadistico_${new Date().toLocaleDateString().replace(/\//g,'-')}.xlsx`);
-    if(window.currentUser) DB.ActivityDB.log(window.currentUser.username, "ExportÃ³ informe estadÃ­stico mÃºltiple a Excel");
+    if(window.currentUser) DB.ActivityDB.log(window.currentUser.username, "Exportó informe estadístico múltiple a Excel");
 };
 
 window.deleteClient = function(id) {
-    if(confirm('Â¿Seguro que desea eliminar este cliente?')) {
+    if(confirm('¿Seguro que desea eliminar este cliente?')) {
         DB.ClientsDB.remove(id);
         renderClients();
         document.getElementById('clients-list-container').style.display='none';
@@ -1700,28 +1708,28 @@ window.removeFromCart = function(index) {
 }
 
 window.factoryResetSystem = function() {
-    if(prompt("PRECAUCION EXTREMA: Esto eliminarÃ¡ de forma irreversible TODO el inventario, clientes, historial de ventas y flujos de caja. Escribe exactamente 'CONFIRMAR' (en mayÃºsculas) para ejecutar:") === 'CONFIRMAR') {
+    if(prompt("PRECAUCION EXTREMA: Esto eliminará de forma irreversible TODO el inventario, clientes, historial de ventas y flujos de caja. Escribe exactamente 'CONFIRMAR' (en mayúsculas) para ejecutar:") === 'CONFIRMAR') {
         requireAuth(async (authUser) => {
             if(authUser.role !== 'Admin') return alert("Denegado: Solo el perfil Administrador maestro puede vaciar la base de datos.");
             try {
                 await DB.SystemDB.factoryReset();
-                DB.ActivityDB.log(authUser.username, "Â¡REALIZÃ“ UN BORRADO GENERAL (FACTORY RESET) DE TODA LA BASE DE DATOS MANTENIENDO SOLO USUARIOS!");
-                alert("Limpieza a cero completada con Ã©xito. El sistema estÃ¡ ahora como nuevo. Redirigiendo...");
+                DB.ActivityDB.log(authUser.username, "¡REALIZÓ UN BORRADO GENERAL (FACTORY RESET) DE TODA LA BASE DE DATOS MANTENIENDO SOLO USUARIOS!");
+                alert("Limpieza a cero completada con éxito. El sistema está ahora como nuevo. Redirigiendo...");
                 window.location.reload();
             } catch(e) {
                 alert("Error al intentar limpiar la base de datos: " + e.message);
             }
         });
     } else {
-        alert("OperaciÃ³n cancelada. El comando no coincidiÃ³ perfectamente con 'CONFIRMAR'");
+        alert("Operación cancelada. El comando no coincidió perfectamente con 'CONFIRMAR'");
     }
 }
 
 window.cancelSale = function(id) {
-    if(confirm('Â¿EstÃ¡s seguro de cancelar esta venta? El stock de los artÃ­culos devueltos se sumarÃ¡ nuevamente y el efectivo se marcarÃ¡ en 0.')) {
+    if(confirm('¿Estás seguro de cancelar esta venta? El stock de los artículos devueltos se sumará nuevamente y el efectivo se marcará en 0.')) {
         try {
             DB.SalesDB.cancelSale(id, currentUser.id);
-            if(currentUser) DB.ActivityDB.log(currentUser.username, `CancelÃ³ la venta con ID ${id}`);
+            if(currentUser) DB.ActivityDB.log(currentUser.username, `Canceló la venta con ID ${id}`);
             alert('Venta cancelada exitosamente.');
             renderSalesHistory();
             renderDashboard();
@@ -1743,7 +1751,7 @@ window.openRenewModal = function(id, name, planType) {
     document.getElementById('renew-plan-days').value = days;
     
     document.getElementById('renew-plan-name-display').innerText = planType;
-    document.getElementById('renew-plan-days-display').innerText = `+${days} dÃ­as`;
+    document.getElementById('renew-plan-days-display').innerText = `+${days} días`;
     const c = DB.ClientsDB.getById(id);
     document.getElementById('renew-price').value = c ? (c.charge_amount || '') : '';
     
@@ -1793,7 +1801,7 @@ if(fileImport) {
         const file = e.target.files[0];
         if(!file) return;
         
-        if(!confirm('Â¿EstÃ¡s seguro de que deseas importar estos datos? ADVERTENCIA: Se borrarÃ¡n todos los datos actuales del sistema y se reemplazarÃ¡n por los del archivo.')) {
+        if(!confirm('¿Estás seguro de que deseas importar estos datos? ADVERTENCIA: Se borrarán todos los datos actuales del sistema y se reemplazarán por los del archivo.')) {
             e.target.value = ''; // reset hidden input
             return;
         }
@@ -1817,10 +1825,10 @@ if(fileImport) {
                     processArray(importedData.sales, 'gym_sales');
                     processArray(importedData.clients, 'gym_clients');
                     
-                    alert('Datos importados a la Nube correctamente. PodrÃ­a tomar unos segundos en aparecer.');
+                    alert('Datos importados a la Nube correctamente. Podría tomar unos segundos en aparecer.');
                     window.location.reload();
                 } else {
-                    alert('El archivo no parece ser un respaldo vÃ¡lido del programa.');
+                    alert('El archivo no parece ser un respaldo válido del programa.');
                 }
             } catch(error) {
                 alert('Hubo un error al leer el archivo. Verifica que sea el .json correcto.');
@@ -1889,7 +1897,7 @@ window.renderReports = function() {
            if(i.name.toLowerCase().includes('agua') || i.name.toLowerCase().includes('bebida') || i.name.toLowerCase().includes('cava') || i.name.toLowerCase().includes('energetic')) category = 'Bebidas';
            else if(i.name.includes('Pase Diario')) category = 'Tickets Diarios';
            else if(i.name.toLowerCase().includes('suplemento') || i.name.toLowerCase().includes('proteina') || i.name.toLowerCase().includes('creatina')) category = 'Suplementos';
-           else category = 'ArtÃ­culos Varios';
+           else category = 'Artículos Varios';
            
            if(!deptTotals[category]) deptTotals[category] = 0;
            deptTotals[category] += i.subtotal || (i.price * i.qty) || 0;
@@ -1931,7 +1939,7 @@ window.renderReports = function() {
                 </tr>`;
             }
         });
-        if(tBodyMonthly.innerHTML === '') tBodyMonthly.innerHTML = '<tr><td colspan="3">AÃºn no hay datos para este aÃ±o</td></tr>';
+        if(tBodyMonthly.innerHTML === '') tBodyMonthly.innerHTML = '<tr><td colspan="3">Aún no hay datos para este año</td></tr>';
     }
 
     const ctxWeekly = document.getElementById('chart-weekly-sales');
@@ -1939,7 +1947,7 @@ window.renderReports = function() {
     weeklyChartInstance = new Chart(ctxWeekly, {
         type: 'bar',
         data: {
-            labels: ['Lunes', 'Martes', 'MiÃ©rcoles', 'Jueves', 'Viernes', 'SÃ¡bado', 'Domingo'],
+            labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
             datasets: [{
                 label: 'Ventas de la semana actual ($)',
                 data: weeklyTotals,
@@ -2105,8 +2113,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const price = parseFloat(document.getElementById('v-daily-price').value);
             const method = document.getElementById('v-daily-payment-method').value;
             
-            if (method === 'CrÃ©dito') {
-                 if(!finalName) { alert("Obligatorio elegir un cliente para crear la cuenta de crÃ©dito."); return; }
+            if (method === 'Crédito') {
+                 if(!finalName) { alert("Obligatorio elegir un cliente para crear la cuenta de crédito."); return; }
                  window.pendingCreditData = {
                      isDailyPass: true,
                      pendingClientName: finalName,
@@ -2119,7 +2127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if(!existingClient && newName) {
-                // Registrar al cliente si se escribiÃ³ nombre nuevo.
+                // Registrar al cliente si se escribió nombre nuevo.
                 const newClient = {
                     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
                     name: newName,
@@ -2128,7 +2136,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     weight: 0,
                     address: '',
                     phone: '',
-                    plan_type: 'Pase de 1 DÃ­a',
+                    plan_type: 'Pase de 1 Día',
                     payment_date: new Date().toISOString(),
                     extension_days: 0,
                     trainer_id: ''
@@ -2218,7 +2226,7 @@ document.addEventListener('DOMContentLoaded', () => {
             DB.ClientsDB.update(id, c);
             
             if(currentUser && currentUser.role === 'Staff') {
-                DB.ActivityDB.log(currentUser.username, `ActualizÃ³ la hoja de progreso del cliente ${c.name} ${c.surname}`);
+                DB.ActivityDB.log(currentUser.username, `Actualizó la hoja de progreso del cliente ${c.name} ${c.surname}`);
             }
             
             alert('Progreso guardado correctamente.');
@@ -2230,7 +2238,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Premium Features Implementation
 window.openWhatsApp = function(phone, name) {
     const cleanPhone = phone.replace(/[^0-9]/g, '');
-    const message = encodeURIComponent(`Hola ${name}, te saludamos de EJ Profit V&G. Te recordamos que tu plan de membresÃ­a estÃ¡ prÃ³ximo a vencer. Â¡Te esperamos para renovar!`);
+    const message = encodeURIComponent(`Hola ${name}, te saludamos de EJ Profit V&G. Te recordamos que tu plan de membresía está próximo a vencer. ¡Te esperamos para renovar!`);
     window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
 };
 
@@ -2270,7 +2278,7 @@ window.processRedeemPoints = function() {
         if(client.fit_points < deduct) return alert("Puntos insuficientes.");
         client.fit_points -= deduct;
         DB.ClientsDB.update(id, client);
-        if(currentUser) DB.ActivityDB.log(currentUser.username, `CanjeÃ³ ${deduct} Puntos Fit del cliente ${client.name} por: ${reason}`);
+        if(currentUser) DB.ActivityDB.log(currentUser.username, `Canjeó ${deduct} Puntos Fit del cliente ${client.name} por: ${reason}`);
         alert("Canje procesado.");
         closeModal('modal-redeem-points');
         renderClients();
@@ -2301,8 +2309,8 @@ window.startScanner = function() {
             if(!client) {
                 resultDiv.style.background = 'rgba(239, 68, 68, 0.2)';
                 resultDiv.style.color = 'var(--danger-color)';
-                resultDiv.innerText = "Error: CÃ³digo QR no registrado.";
-                speakMsg("CÃ³digo no registrado");
+                resultDiv.innerText = "Error: Código QR no registrado.";
+                speakMsg("Código no registrado");
                 setTimeout(() => { resultDiv.style.display = 'none'; html5QrcodeScanner.resume(); }, 3000);
             } else {
                 const expInfo = window.checkClientExpiration(client);
@@ -2310,8 +2318,8 @@ window.startScanner = function() {
                 if(expInfo.isExpired) {
                     resultDiv.style.background = 'rgba(239, 68, 68, 0.2)';
                     resultDiv.style.color = 'var(--danger-color)';
-                    resultDiv.innerHTML = `Â¡VENCIDO!<br><small>${client.name} ${client.surname}</small>`;
-                    speakMsg(`MembresÃ­a vencida, ${client.name}`);
+                    resultDiv.innerHTML = `¡VENCIDO!<br><small>${client.name} ${client.surname}</small>`;
+                    speakMsg(`Membresía vencida, ${client.name}`);
                     setTimeout(() => { resultDiv.style.display = 'none'; html5QrcodeScanner.resume(); }, 4000);
                 } else {
                     // Calculate Streak
@@ -2352,22 +2360,22 @@ window.startScanner = function() {
                     if (expInfo.daysLeft <= 3) {
                         bgColor = 'rgba(245, 158, 11, 0.2)'; // Yellow
                         txColor = '#f59e0b';
-                        extraMsg = `<br><small>Te quedan ${expInfo.daysLeft} dÃ­as</small>`;
-                        speakMsg(`Bienvenido ${client.name}, tu membresÃ­a vence pronto`);
+                        extraMsg = `<br><small>Te quedan ${expInfo.daysLeft} días</small>`;
+                        speakMsg(`Bienvenido ${client.name}, tu membresía vence pronto`);
                     } else {
                         speakMsg(`Bienvenido ${client.name}`);
                     }
                     
                     resultDiv.style.background = bgColor;
                     resultDiv.style.color = txColor;
-                    resultDiv.innerHTML = `ACCESO APROBADO<br><strong>${client.name} ${client.surname}</strong><br><small>ðŸ”¥ Racha: ${newStreak} dÃ­as</small>${extraMsg}`;
+                    resultDiv.innerHTML = `ACCESO APROBADO<br><strong>${client.name} ${client.surname}</strong><br><small>ðŸ”¥ Racha: ${newStreak} días</small>${extraMsg}`;
                     
                     setTimeout(() => { resultDiv.style.display = 'none'; html5QrcodeScanner.resume(); }, 3500);
                 }
             }
         },
         (error) => {}
-    ).catch(err => alert("Error abriendo cÃ¡mara: " + err));
+    ).catch(err => alert("Error abriendo cámara: " + err));
 };
 
 window.stopScanner = function() {
@@ -2412,7 +2420,7 @@ window.loginClientPortal = function() {
         
         if (daysLeft <= 3 && "Notification" in window && Notification.permission === "granted") {
             new Notification("Aviso del Gimnasio", {
-                body: isExpired ? "Tu membresÃ­a ha vencido. Por favor acÃ©rcate a recepciÃ³n." : `Â¡AtenciÃ³n! Tu membresÃ­a vence en ${daysLeft} dÃ­as.`,
+                body: isExpired ? "Tu membresía ha vencido. Por favor acércate a recepción." : `¡Atención! Tu membresía vence en ${daysLeft} días.`,
                 icon: "ej_profit_logo.jpg"
             });
         }
@@ -2594,7 +2602,7 @@ window.renderRoutines = function() {
         grid.innerHTML += `
             <div class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; position: relative;">
                 <h3 style="margin: 0; color: var(--primary-color);">${r.name}</h3>
-                <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0; flex-grow: 1;">${r.description || 'Sin descripciÃ³n'}</p>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0; flex-grow: 1;">${r.description || 'Sin descripción'}</p>
                 <div style="font-size: 0.8rem; background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem;">
                     <strong>${r.exercises ? r.exercises.length : 0} Ejercicios</strong>
                 </div>
@@ -2632,7 +2640,7 @@ window.addExerciseField = function() {
 };
 
 window.deleteRoutine = function(id) {
-    if(confirm('Â¿EstÃ¡s seguro de que deseas eliminar esta rutina?')) {
+    if(confirm('¿Estás seguro de que deseas eliminar esta rutina?')) {
         DB.RoutinesDB.remove(id);
         renderRoutines();
     }
@@ -2643,16 +2651,16 @@ window.assignRoutine = function(routineId) {
     if(!routine) return;
     
     // Quick prompt to ask for client phone
-    const phone = prompt(`Vas a asignar la rutina "${routine.name}". \n\nIngresa el nÃºmero de telÃ©fono del cliente:`).replace(/[^0-9]/g, '');
+    const phone = prompt(`Vas a asignar la rutina "${routine.name}". \n\nIngresa el número de teléfono del cliente:`).replace(/[^0-9]/g, '');
     if(!phone) return;
     
     const client = DB.ClientsDB.getAll().find(c => c.phone && c.phone.replace(/[^0-9]/g, '') === phone);
     if(client) {
         client.assigned_routine = routineId;
         DB.ClientsDB.update(client.id, client);
-        alert(`Â¡Rutina asignada exitosamente a ${client.name} ${client.surname}!`);
+        alert(`¡Rutina asignada exitosamente a ${client.name} ${client.surname}!`);
     } else {
-        alert("No se encontrÃ³ ningÃºn cliente con ese nÃºmero.");
+        alert("No se encontró ningún cliente con ese número.");
     }
 };
 
@@ -2723,7 +2731,7 @@ window.loginClientPortal = function() {
                 `;
             });
         } else {
-            container.innerHTML = '<p style="color:var(--text-secondary); font-size: 0.85rem;">No tienes una rutina asignada aÃºn. Â¡Habla con tu entrenador!</p>';
+            container.innerHTML = '<p style="color:var(--text-secondary); font-size: 0.85rem;">No tienes una rutina asignada aún. ¡Habla con tu entrenador!</p>';
         }
     }
 };
