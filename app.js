@@ -1148,7 +1148,7 @@ function renderInventory() {
                 <td>${item.id.substring(0,6)}</td>
                 <td>${item.name}</td>
                 <td>${item.description || '-'}</td>
-                <td>$${parseFloat(item.cost_price || 0).toFixed(2)}</td>
+                <td class="admin-only">$${parseFloat(item.cost_price || 0).toFixed(2)}</td>
                 <td>$${parseFloat(item.price).toFixed(2)}</td>
                 <td style="color: ${item.quantity <= 5 ? 'var(--danger-color)' : 'inherit'}; font-weight: ${item.quantity <= 5 ? 'bold' : 'normal'}">${item.quantity}</td>
                 <td class="action-btns admin-only">
